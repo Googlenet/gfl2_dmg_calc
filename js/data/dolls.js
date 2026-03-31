@@ -65,21 +65,33 @@ const DOLLS = [
   //   notes: '',
   // },
 
-  // ── Placeholder — replace with real data ─────────────────────────────────
+  // need:
+  // id, name, class
+  // skills: id, skill name, target/aoe (for target/aoe buffs), multiplier
   {
-    id: 'generic',
-    name: '— Select a Doll —',
-    class: '',
-    ammoType: '',
-    phase: '',
+    id: 'flat:)',
+    name: 'Leva',
+    class: 'Sentinel',
+    ammoType: 'Light',
+    phase: 'Electric',
     skills: [
       {
-        id: 'manual',
-        name: 'Manual Entry',
+        id: 'leva_b',
+        name: 'Dangerous Smile',
         type: 'active',
-        description: 'Enter your skill multiplier manually in the Skill panel.',
+        description: 'Selects one enemy target within 7 tiles and deals Physical damage equal to 80% of attack to it.',
         hits: 1,
-        multiplier: null,   // null = user fills in manually
+        multiplier: 0.80,
+        scalingStat: 'ATK',
+        canCrit: true,
+      },
+      {
+        id: 'leva_1',
+        name: 'Rational Suppression',
+        type: 'active',
+        description: 'Select one direction, dealing AoE Electric damage equal to 120% of attack to all enemy units in a 7×3 tile area of the selected direction, applies Negative Charge to all enemies in the selected area for 2 turns, and generates Voltage tiles for 3 turns.',
+        hits: 1,
+        multiplier: 1.20,
         scalingStat: 'ATK',
         canCrit: true,
       },
