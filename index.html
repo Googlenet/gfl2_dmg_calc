@@ -22,12 +22,30 @@
   <div class="panel" style="margin-bottom:14px;">
     <div class="corner-deco"></div>
     <div class="panel-label">Skill Profile</div>
+
     <div class="section-header">Select Doll</div>
     <select id="doll-select" class="profile-select" onchange="onDollChange()"></select>
-    <div style="margin-top:10px;">
-      <div class="section-header">Select Skill</div>
-      <select id="skill-select" class="profile-select" onchange="onSkillChange()"></select>
+
+    <div style="margin-top:12px;">
+      <div class="section-header">Vertebrae Level</div>
+      <select id="vertebrae-select" class="profile-select" onchange="onVertebraeChange()">
+        <option value="v0">V0 — Base</option>
+        <option value="v1">V1</option>
+        <option value="v2">V2</option>
+        <option value="v3">V3</option>
+        <option value="v4">V4</option>
+        <option value="v5">V5</option>
+        <option value="v6">V6 — Max</option>
+      </select>
     </div>
+
+    <div style="margin-top:12px;">
+      <div class="section-header">Select Skill</div>
+      <select id="skill-select" class="profile-select" onchange="onSkillChange()">
+        <option>— Select a doll first —</option>
+      </select>
+    </div>
+
     <div id="skill-card" class="skill-card" style="margin-top:10px;">
       <div class="skill-card-name">No skill selected</div>
     </div>

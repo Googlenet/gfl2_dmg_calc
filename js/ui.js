@@ -229,77 +229,151 @@ function renderCritToggles() {
 
 // ── Skill Profile ─────────────────────────────────────────────────────────────
 
-let activeDoll = null;
-let activeSkill = null;
+let activeDoll      = null;
+let activeSkill     = null;
+let activeVertebrae = 'v0';
+let activeMultIndex = 0;   // which option is selected for multi-multiplier skills
 
 function populateDollSelector() {
   const sel = document.getElementById('doll-select');
   if (!sel) return;
-  const list = getDollList();
-  sel.innerHTML = `<option value="generic">— Select a Doll —</option>`
-    + list.map(d => `<option value="${d.id}">${d.name} (${d.class})</option>`).join('');
+  sel.innerHTML = `<option value="">— Select a Doll —</option>`
+    + getDollList().map(d =>
+        `<option value="${d.id}">${d.name} (${d.class})</option>`
+      ).join('');
 }
 
 function onDollChange() {
-  const id = document.getElementById('doll-select').value;
-  activeDoll = getDoll(id) || getDoll('generic');
+  activeDoll = getDoll(document.getElementById('doll-select').value);
+  activeMultIndex = 0;
   renderSkillSelector();
-  renderSkillCard();
   applyDollPassives();
+  updateLive();
+}
+
+function onVertebraeChange() {
+  activeVertebrae = document.getElementById('vertebrae-select').value;
+  activeMultIndex = 0;
+  renderSkillSelector();
   updateLive();
 }
 
 function renderSkillSelector() {
   const sel = document.getElementById('skill-select');
-  if (!sel || !activeDoll) return;
-  sel.innerHTML = activeDoll.skills.map(s =>
-    `<option value="${s.id}">${s.name} (${s.hits > 1 ? s.hits + '× ' : ''}${s.multiplier !== null ? (s.multiplier * 100).toFixed(0) + '%' : 'manual'})</option>`
-  ).join('');
+  if (!sel) return;
+
+  if (!activeDoll) {
+    sel.innerHTML = '<option>— Select a doll first —</option>';
+    renderSkillCard();
+    return;
+  }
+
+  const skills = getSkillsForVertebrae(activeDoll, activeVertebrae);
+  sel.innerHTML = skills.map(s => {
+    const multLabel = Array.isArray(s.multiplier)
+      ? 'variable'
+      : s.multiplier !== null ? `${(s.multiplier * 100).toFixed(0)}%` : 'passive';
+    return `<option value="${s.id}">${s.name} — ${s.dmg_type} / ${s.skill_type} (${multLabel})</option>`;
+  }).join('');
+
   // Default to first skill
-  activeSkill = activeDoll.skills[0] || null;
-  applySkillMultiplier();
+  activeSkill     = skills[0] || null;
+  activeMultIndex = 0;
+  renderSkillCard();
+  applySkillToCalc();
 }
 
 function onSkillChange() {
-  const id = document.getElementById('skill-select').value;
-  activeSkill = activeDoll?.skills.find(s => s.id === id) || null;
+  if (!activeDoll) return;
+  const id     = document.getElementById('skill-select').value;
+  const skills = getSkillsForVertebrae(activeDoll, activeVertebrae);
+  activeSkill     = skills.find(s => s.id === id) || null;
+  activeMultIndex = 0;
   renderSkillCard();
-  applySkillMultiplier();
+  applySkillToCalc();
+  updateLive();
+}
+
+// Called when user picks a multiplier option on a multi-mult skill
+function onMultSelect(index) {
+  activeMultIndex = activeMultIndex === index ? 0 : index;
+  renderSkillCard();
+  applySkillToCalc();
   updateLive();
 }
 
 function renderSkillCard() {
   const card = document.getElementById('skill-card');
-  if (!card || !activeSkill) return;
-  const multText = activeSkill.multiplier !== null
-    ? `${(activeSkill.multiplier * 100).toFixed(0)}% ${activeSkill.scalingStat}${activeSkill.hits > 1 ? ` × ${activeSkill.hits} hits` : ''}`
-    : 'Manual entry';
+  if (!card) return;
+
+  if (!activeSkill) {
+    card.innerHTML = '<div class="skill-card-name">No skill selected</div>';
+    return;
+  }
+
+  const isMulti = Array.isArray(activeSkill.multiplier);
+  const dmgBadge = `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(167,139,250,0.15);color:var(--dmg-color);margin-left:6px;">${activeSkill.dmg_type}</span>`;
+  const typeBadge = `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(0,170,255,0.1);color:var(--accent);margin-left:4px;">${activeSkill.skill_type}</span>`;
+
+  let multSection = '';
+  if (isMulti) {
+    // Render mutually exclusive checkboxes for each multiplier option
+    multSection = `
+      <div style="margin-top:10px;">
+        <div class="skill-card-name" style="margin-bottom:6px;">Select Multiplier</div>
+        <table class="atk-buff-table" style="margin-top:0;">
+          <tbody>
+            ${activeSkill.multiplier.map((opt, i) => `
+              <tr class="atk-buff-row ${activeMultIndex === i ? 'active-I' : ''}">
+                <td class="atk-buff-name">${opt.label}</td>
+                <td class="atk-buff-check" style="width:40px;">
+                  <input type="checkbox" class="atk-cb"
+                    ${activeMultIndex === i ? 'checked' : ''}
+                    onchange="onMultSelect(${i})">
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="skill-card-mult" style="margin-top:8px;">
+          Active: ${(activeSkill.multiplier[activeMultIndex].value * 100).toFixed(0)}% ${activeSkill.scalingStat ?? 'ATK'}
+        </div>
+      </div>`;
+  } else if (activeSkill.multiplier !== null) {
+    const scaleStat = activeSkill.scalingStat ?? 'ATK';
+    multSection = `<div class="skill-card-mult" style="margin-top:8px;">${(activeSkill.multiplier * 100).toFixed(0)}% ${scaleStat}</div>`;
+  } else {
+    multSection = `<div class="skill-card-mult" style="margin-top:8px;color:var(--text-dim);font-size:13px;">Passive — no direct multiplier</div>`;
+  }
+
   card.innerHTML = `
-    <div class="skill-card-name">${activeSkill.type.toUpperCase()} — ${activeSkill.name}</div>
-    <div class="skill-card-desc">${activeSkill.description}</div>
-    <div class="skill-card-mult">${multText}</div>
-    ${activeSkill.notes ? `<div class="skill-card-desc" style="margin-top:6px;color:var(--crit);">⚠ ${activeSkill.notes}</div>` : ''}
+    <div class="skill-card-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
+      ${activeSkill.name}${dmgBadge}${typeBadge}
+    </div>
+    <div class="skill-card-desc" style="margin-top:6px;">${activeSkill.description}</div>
+    ${multSection}
+    ${activeSkill.notes ? `<div class="skill-card-desc" style="margin-top:8px;color:var(--crit);">⚠ ${activeSkill.notes}</div>` : ''}
+    ${activeSkill.cooldown ? `<div class="skill-card-desc" style="margin-top:4px;color:var(--text-dim);">Cooldown: ${activeSkill.cooldown} turn${activeSkill.cooldown > 1 ? 's' : ''}</div>` : ''}
   `;
 }
 
-function applySkillMultiplier() {
+function applySkillToCalc() {
   if (!activeSkill || activeSkill.multiplier === null) return;
   const el = document.getElementById('skillmod');
-  if (el) {
-    // Total multiplier = per-hit × hits
-    el.value = (activeSkill.multiplier * activeSkill.hits * 100).toFixed(0);
-  }
+  if (!el) return;
+  const val = Array.isArray(activeSkill.multiplier)
+    ? activeSkill.multiplier[activeMultIndex].value
+    : activeSkill.multiplier;
+  el.value = (val * 100).toFixed(0);
 }
 
 function applyDollPassives() {
   if (!activeDoll) return;
-  // Reset all passive-sourced fields first
-  const allPassiveFields = DOLLS.flatMap(d => d.passives.map(p => p.field));
-  [...new Set(allPassiveFields)].forEach(id => {
+  // Reset all fields that any doll's passives could touch
+  const allFields = DOLLS.flatMap(d => d.passives.map(p => p.field));
+  [...new Set(allFields)].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = 0;
   });
-  // Apply this doll's passives
   activeDoll.passives.forEach(p => {
     const el = document.getElementById(p.field);
     if (el) el.value = p.value;
