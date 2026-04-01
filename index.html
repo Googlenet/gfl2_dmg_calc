@@ -72,7 +72,7 @@
     <div class="panel-label atk">Attack Stats</div>
 
     <div class="section-header">Flat ATK Sources</div>
-    <div class="stat-row"><span class="stat-label">Base Doll ATK</span><div class="stat-input"><input type="number" id="atk" value="1000" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Base Doll ATK</span><div class="stat-input"><input type="number" id="atk" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Weapon Flat ATK</span><div class="stat-input"><input type="number" id="atk_wpn_flat" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Attachment Flat ATK</span><div class="stat-input"><input type="number" id="atk_attach_flat" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Neural Helix Flat ATK</span><div class="stat-input"><input type="number" id="atk_helix_flat" value="0" min="0" oninput="updateLive()"></div></div>
@@ -82,7 +82,7 @@
     <div class="stat-divider"></div>
     <div class="stat-total-row">
       <span class="stat-total-label">Total Flat ATK</span>
-      <span class="stat-total-val" id="total-flat-atk">1,000.00</span>
+      <span class="stat-total-val" id="total-flat-atk">0.00</span>
     </div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
@@ -146,11 +146,11 @@
     <div class="panel-label" style="color:var(--def-color);">Enemy DEF</div>
 
     <div class="section-header" style="color:var(--def-color);">Boss DEF</div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Base DEF</span><div class="stat-input"><input type="number" id="def_base" value="8000" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Base DEF</span><div class="stat-input"><input type="number" id="def_base" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row" style="background:rgba(99,179,237,0.05); border-radius:3px; padding:8px 6px; margin:0 -2px;">
       <span class="stat-total-label" style="color:var(--def-color);">Rounded Base DEF</span>
-      <span class="stat-total-val" style="font-size:20px;color:var(--def-color);text-shadow:0 0 10px rgba(99,179,237,0.4);" id="def-rounded">8,000.00</span>
+      <span class="stat-total-val" style="font-size:20px;color:var(--def-color);text-shadow:0 0 10px rgba(99,179,237,0.4);" id="def-rounded">0.00</span>
     </div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
