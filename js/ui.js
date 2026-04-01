@@ -3,7 +3,7 @@
 //           Calls calculator.js functions for values; never does math itself.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── ATK Fixed Toggles ─────────────────────────────────────────────────────────
+// ── ATK Fixed Toggles (I/II) ──────────────────────────────────────────────────
 
 const ATK_FIXED = [
   { key:'atk_up', label:'Attack Up', valI:10, valII:15, type:'pct' },
@@ -37,6 +37,91 @@ function renderAtkBuffs() {
         }).join('')}
       </tbody>
     </table>`;
+  renderAtkMultiBuffs();
+}
+
+// ── ATK Multi-Level Buffs (I–V or I–III) ─────────────────────────────────────
+// vals array: index 0 = level I, index N-1 = level N
+const ATK_MULTI = [
+  { key:'atk_unity',    label:'Attack Unity',    vals:[0.2, 0.4, 0.6, 0.8, 1.0] },
+  { key:'supp_embryo',  label:'Support — Embryo',vals:[1, 2, 3] },
+  { key:'supp_shoot',   label:'Support — Shoot', vals:[4, 7, 9] },
+  { key:'supp_blossom', label:'Support — Blossom',vals:[3] },
+];
+const atkMultiState = {};
+ATK_MULTI.forEach(b => { atkMultiState[b.key] = 0; }); // 0 = off, 1–N = level
+
+function onAtkMultiSelect(key, level) {
+  // clicking the active level turns it off
+  atkMultiState[key] = atkMultiState[key] === level ? 0 : level;
+  renderAtkMultiBuffs();
+  updateLive();
+}
+
+function renderAtkMultiBuffs() {
+  const container = document.getElementById('battle-atk-extra-list');
+  if (!container) return;
+  container.innerHTML = `
+    <table class="atk-buff-table">
+      <thead>
+        <tr>
+          <th>Buff</th>
+          ${['I','II','III','IV','V'].slice(0, Math.max(...ATK_MULTI.map(b => b.vals.length))).map(l => `<th>${l}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${ATK_MULTI.map(b => {
+          const active = atkMultiState[b.key];
+          const rowCls = active > 0 ? 'active-I' : '';
+          const badge  = active > 0
+            ? `<span class="lv-badge lv1"> +${b.vals[active-1]}%</span>`
+            : '';
+          const maxCols = Math.max(...ATK_MULTI.map(x => x.vals.length));
+          const checkboxes = Array.from({length: maxCols}, (_, i) => {
+            const lvl = i + 1;
+            if (lvl > b.vals.length) return `<td class="atk-buff-check"></td>`;
+            return `<td class="atk-buff-check">
+              <input type="checkbox" class="atk-cb"
+                ${active === lvl ? 'checked' : ''}
+                onchange="onAtkMultiSelect('${b.key}', ${lvl})">
+            </td>`;
+          }).join('');
+          return `<tr class="atk-buff-row ${rowCls}">
+            <td class="atk-buff-name">${b.label}${badge}</td>
+            ${checkboxes}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ── Ichor Flower Level Selector ───────────────────────────────────────────────
+
+function renderIchorSelector() {
+  const wrap = document.getElementById('ichor-select-wrap');
+  if (!wrap) return;
+  // Hidden input stores the current level (0 = off)
+  const currentLevel = parseInt(document.getElementById('ichor-level')?.value ?? '0') || 0;
+  const levels = ['—','I','II','III','IV','V'];
+  wrap.innerHTML = `
+    <input type="hidden" id="ichor-level" value="${currentLevel}">
+    ${levels.map((lbl, i) => `
+      <button type="button"
+        style="padding:4px 8px;margin-right:3px;font-family:'Share Tech Mono',monospace;font-size:11px;
+               background:${currentLevel===i?'rgba(255,107,107,0.25)':'var(--panel2)'};
+               border:1px solid ${currentLevel===i?'var(--atk-color)':'var(--border)'};
+               color:${currentLevel===i?'var(--atk-color)':'var(--text-dim)'};
+               border-radius:3px;cursor:pointer;"
+        onclick="onIchorSelect(${i})">${lbl}</button>
+    `).join('')}`;
+}
+
+function onIchorSelect(level) {
+  const el = document.getElementById('ichor-level');
+  // Clicking active level turns it off
+  if (el) el.value = (parseInt(el.value) === level ? 0 : level);
+  renderIchorSelector();
+  updateLive();
 }
 
 // ── DEF Debuff Toggles ────────────────────────────────────────────────────────
@@ -378,6 +463,13 @@ function applyDollPassives() {
     const el = document.getElementById(p.field);
     if (el) el.value = p.value;
   });
+  // Set base crit DMG from doll data (read-only field)
+  const critEl = document.getElementById('critdmg');
+  if (critEl && activeDoll.baseCritDmg != null) {
+    critEl.value = activeDoll.baseCritDmg;
+  } else if (critEl && !activeDoll.baseCritDmg) {
+    critEl.value = 150; // default if not set in doll data
+  }
 }
 
 // ── Live Update (display only) ────────────────────────────────────────────────
@@ -385,35 +477,26 @@ function applyDollPassives() {
 function updateLive() {
 
   // ATK
-  const totalFlat    = getFlatATKSources();
-  const flatWhole    = getFlatATKWhole();
-  const totalPct     = getAtkPctSources();
-  const baseAtkTotal = getBaseAtkTotal();
-  const atkIchorTotal= getAtkIchorTotal();
-  const ichorWhole   = getAtkIchorWhole();
-  const battlePct    = getBattleAtkPct();
-  const atkFinal     = getAtkFinal();
-  const atkFinalWhole= Math.round(atkFinal);
+  const totalFlat      = getFlatATKSources();
+  const flatWhole      = getFlatATKWhole();
+  const totalPct       = getAtkPctSources();
+  const baseAtkTotal   = getBaseAtkTotal();
+  const battleFlatTotal= getBattleFlatTotal();
+  const battleFlatWhole= getBattleAtkFlatWhole();
+  const battlePct      = getBattleAtkPct();
+  const atkFinal       = getAtkFinal();
+  const atkFinalWhole  = Math.ceil(atkFinal);
 
-  // Total Flat ATK: decimal (whole)
   document.getElementById('total-flat-atk').textContent = `${fmt(totalFlat)} (${flatWhole.toLocaleString()})`;
-
-  // ATK% Boost parenthesis: % of whole flat
   document.getElementById('total-atk-pct').childNodes[0].textContent = `+${totalPct}% `;
   document.getElementById('total-atk-pct-abs').textContent = `(+${fmt(flatWhole * totalPct / 100)})`;
-
-  // Base ATK Total: decimal only (no whole shown per example)
   document.getElementById('base-atk-total').textContent = fmt(baseAtkTotal);
-
-  // ATK + Ichor Total: decimal (whole)
-  document.getElementById('atk-ichor-total').textContent = `${fmt(atkIchorTotal)} (${ichorWhole.toLocaleString()})`;
-
-  // Battle ATK% parenthesis: % of ichor whole
+  document.getElementById('atk-ichor-total').textContent = `${fmt(battleFlatTotal)} (${battleFlatWhole.toLocaleString()})`;
   document.getElementById('total-battle-pct').childNodes[0].textContent = `+${battlePct}% `;
-  document.getElementById('total-battle-pct-abs').textContent = `(+${fmt(ichorWhole * battlePct / 100)})`;
-
-  // In-Battle ATK: decimal (whole)
+  document.getElementById('total-battle-pct-abs').textContent = `(+${fmt(battleFlatWhole * battlePct / 100)})`;
   document.getElementById('in-battle-atk').textContent = `${fmt(atkFinal)} (${atkFinalWhole.toLocaleString()})`;
+
+  renderIchorSelector();
 
   // DEF
   const baseDef  = parseFloat(document.getElementById('def_base')?.value) || 0;
@@ -428,7 +511,7 @@ function updateLive() {
 
   // DMG
   const dmgMult = getDmgMult();
-  const dmgSum  = Math.round((dmgMult - 1) * 10000) / 100;
+  const dmgSum  = Math.ceil((dmgMult - 1) * 10000) / 100;
   document.getElementById('dmg-total-display').textContent = `+${dmgSum}% → ×${dmgMult.toFixed(3)}`;
 
   // Crit
@@ -450,9 +533,9 @@ function updateLive() {
 function runCalculate() {
   const { normalDmg, critDmgVal, avgDmg, steps } = calculate();
 
-  document.getElementById('result-normal').textContent = fmt(normalDmg);
-  document.getElementById('result-crit').textContent   = fmt(critDmgVal);
-  document.getElementById('result-avg').textContent    = fmt(avgDmg);
+  document.getElementById('result-normal').textContent = normalDmg.toLocaleString();
+  document.getElementById('result-crit').textContent   = critDmgVal.toLocaleString();
+  document.getElementById('result-avg').textContent    = avgDmg.toLocaleString();
 
   ['result-normal','result-crit','result-avg'].forEach(id => {
     const el = document.getElementById(id);
@@ -475,10 +558,11 @@ function initEventListeners() {
   const numInputIds = [
     'atk','atk_wpn_flat','atk_attach_flat','atk_helix_flat','atk_affinity_flat','atk_dispatch_flat','atk_remold_flat',
     'atk_wpn_pct','atk_attach_pct','atk_helix_node_pct','atk_helix_extra_pct','atk_keys_pct','atk_covenant_pct','atk_fixedkey_pct',
-    'atk_ichor_flat_boost','atk_remold_pct','battle_fixedkey_pct','battle_skill_pct',
+    'doll_max_hp','food_buff_flat','food_atk_pct',
+    'atk_remold_pct','battle_fixedkey_pct','battle_skill_pct',
     'def_base','def_buff_pct','def_weapon_trait','def_skill_debuff',
-    'dmg_doll_passive','dmg_weapon_trait','dmg_attach_set','dmg_common_keys','dmg_fixed_keys',
-    'critdmg','critrate','skillmod',
+    'dmg_doll_passive','dmg_weapon_trait','dmg_attach_set','dmg_common_keys','dmg_fixed_keys','dmg_remolding',
+    'critdmg_extra','critrate','skillmod',
   ];
   numInputIds.forEach(id => {
     const el = document.getElementById(id);
@@ -491,7 +575,8 @@ function initEventListeners() {
 }
 
 function init() {
-  renderAtkBuffs();
+  renderAtkBuffs();       // also calls renderAtkMultiBuffs
+  renderIchorSelector();
   renderDefDebuffs();
   renderDmgToggles();
   renderCritToggles();

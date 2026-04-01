@@ -103,17 +103,19 @@
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-total-row" style="background:rgba(255,107,107,0.05); border-radius:3px; padding:8px 6px; margin:0 -2px;">
       <span class="stat-total-label" style="color:var(--atk-color);">Base ATK Total</span>
-      <span class="stat-total-val" style="font-size:20px;" id="base-atk-total">1,000.00</span>
+      <span class="stat-total-val" style="font-size:20px;" id="base-atk-total">0.00</span>
     </div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
 
-    <div class="section-header">Ichor Flower</div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Ichor Flower Flat ATK</span><div class="stat-input"><input type="number" id="atk_ichor_flat_boost" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="section-header">In-Battle Flat ATK Buffs</div>
+    <div class="stat-row"><span class="stat-label">Max HP</span><div class="stat-input"><input type="number" id="doll_max_hp" value="0" min="0" oninput="updateLive()"><div class="suf">for Ichor calc</div></div></div>
+    <div class="stat-row"><span class="stat-label">Ichor Flower</span><div class="stat-input" style="width:auto;display:flex;align-items:center;gap:0;flex-shrink:0;" id="ichor-select-wrap"></div></div>
+    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Food Buff Flat ATK</span><div class="stat-input"><input type="number" id="food_buff_flat" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row" style="background:rgba(255,107,107,0.05); border-radius:3px; padding:8px 6px; margin:0 -2px;">
-      <span class="stat-total-label" style="color:var(--atk-color);">ATK + Ichor Total</span>
-      <span class="stat-total-val" style="font-size:20px;" id="atk-ichor-total">1,000.00</span>
+      <span class="stat-total-label" style="color:var(--atk-color);">In-Battle Flat ATK Total</span>
+      <span class="stat-total-val" style="font-size:20px;" id="atk-ichor-total">0.00</span>
     </div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
@@ -125,9 +127,12 @@
       <div id="platoon-atk-list"></div>
       <div class="stat-divider" style="margin-top:8px;"></div>
     </div>
+    <div id="battle-atk-extra-list"></div>
+    <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-row"><span class="stat-label">Remolding ATK %</span><div class="stat-input"><input type="number" id="atk_remold_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys ATK % Buff</span><div class="stat-input"><input type="number" id="battle_fixedkey_pct" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Skill-based ATK % Buff</span><div class="stat-input"><input type="number" id="battle_skill_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Skill-based ATK % Buff</span><div class="stat-input"><input type="number" id="battle_skill_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Food ATK % Buff</span><div class="stat-input"><input type="number" id="food_atk_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row">
       <span class="stat-total-label">Total Battle ATK% Buff</span>
@@ -136,7 +141,7 @@
     <div class="stat-divider" style="margin-top:12px; background: linear-gradient(90deg, var(--atk-color), transparent); opacity:0.5;"></div>
     <div class="stat-total-row" style="padding-top:10px;">
       <span class="stat-total-label" style="font-size:11px; letter-spacing:2px; color:var(--atk-color);">In-Battle ATK</span>
-      <span class="stat-total-val" style="font-size:22px;" id="in-battle-atk">1,000.00</span>
+      <span class="stat-total-val" style="font-size:22px;" id="in-battle-atk">0.00</span>
     </div>
   </div>
 
@@ -165,7 +170,7 @@
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-total-row" style="background:rgba(99,179,237,0.05); border-radius:3px; padding:8px 6px; margin:0 -2px;">
       <span class="stat-total-label" style="color:var(--def-color);">Boosted DEF</span>
-      <span class="stat-total-val" style="font-size:20px;color:var(--def-color);text-shadow:0 0 10px rgba(99,179,237,0.4);" id="def-boosted">8,000.00</span>
+      <span class="stat-total-val" style="font-size:20px;color:var(--def-color);text-shadow:0 0 10px rgba(99,179,237,0.4);" id="def-boosted">0.00</span>
     </div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
@@ -197,7 +202,8 @@
     <div class="stat-row"><span class="stat-label">Weapon Traits</span><div class="stat-input"><input type="number" id="dmg_weapon_trait" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Attachment Set</span><div class="stat-input"><input type="number" id="dmg_attach_set" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Common Keys</span><div class="stat-input"><input type="number" id="dmg_common_keys" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Fixed Keys</span><div class="stat-input"><input type="number" id="dmg_fixed_keys" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Fixed Keys</span><div class="stat-input"><input type="number" id="dmg_fixed_keys" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Remolding</span><div class="stat-input"><input type="number" id="dmg_remolding" value="0" min="0" oninput="updateLive()"></div></div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
 
@@ -230,8 +236,9 @@
     <div class="corner-deco"></div>
     <div class="panel-label">Crit Stats</div>
     <div class="section-header">Base Crit Stats</div>
-    <div class="stat-row"><span class="stat-label">Crit DMG %</span><div class="stat-input"><input type="number" id="critdmg" value="150" min="100" oninput="updateLive()"><div class="suf">e.g. 150 = ×1.50</div></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Crit Rate %</span><div class="stat-input"><input type="number" id="critrate" value="50" min="0" max="100" oninput="updateLive()"><div class="suf">for avg dmg only</div></div></div>
+    <div class="stat-row"><span class="stat-label">Crit DMG %</span><div class="stat-input"><input type="number" id="critdmg" value="150" min="100" readonly style="opacity:0.5;cursor:not-allowed;"><div class="suf">from doll profile</div></div></div>
+    <div class="stat-row"><span class="stat-label">Additional Crit DMG %</span><div class="stat-input"><input type="number" id="critdmg_extra" value="0" min="0" oninput="updateLive()"><div class="suf">weapon / keys / etc.</div></div></div>
+    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Crit Rate %</span><div class="stat-input"><input type="number" id="critrate" value="0" min="0" max="100" oninput="updateLive()"><div class="suf">for avg dmg only</div></div></div>
     <div class="stat-divider" style="margin-top:12px;"></div>
     <div class="section-header">Crit Toggles</div>
     <div id="crit-toggle-list"></div>
