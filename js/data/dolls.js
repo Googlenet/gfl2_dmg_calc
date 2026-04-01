@@ -1,74 +1,42 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // dolls.js  —  GFL2 Doll Database
 //
-// SCHEMA
-// ──────
-// {
-//   id:        string    — unique slug (e.g. 'leva')
-//   name:      string    — display name
-//   class:     string    — 'Bulwark' | 'Vanguard' | 'Sentinel' | 'Support'
-//   ammoType:  string    — 'Light' | 'Medium' | 'Heavy' | 'Shotgun' | 'Melee'
-//   phase:     string    — 'Burn' | 'Freeze' | 'Electric' | 'Corrosion' | 'Hydro'
+// MECHANICS SCHEMA
+// ─────────────────
+// Each doll can have a `mechanics` array describing her unique in-battle
+// mechanics. The UI reads this and renders a doll-specific panel automatically.
 //
-//   skills: [
-//     {
-//       id:          string    — unique slug (e.g. 'leva_s1')
-//       name:        string    — display name
-//       dmg_type:    string    — 'Physical' | 'Burn' | 'Freeze' | 'Electric' | 'Corrosion' | 'Hydro'
-//       skill_type:  string    — 'target' | 'aoe' | 'melee' | 'support' | 'passive'
-//       description: string    — tooltip text
+// Mechanic types:
 //
-//       multiplier:  number | Array<{ label: string, value: number }>
-//                    — Single decimal value (e.g. 1.20 = 120% ATK), OR an array
-//                      of labeled options for skills with variable multipliers.
-//                      Array form: [{ label: '0 stacks', value: 0.50 }, ...]
-//                      The UI renders mutually exclusive checkboxes for each option.
+//   { type: 'stack_selector',
+//     key:    string,          — unique key for state tracking
+//     label:  string,          — display name
+//     max:    number,          — maximum stacks (e.g. 4)
+//     effect: (stacks) => ({   — function returning bonuses at given stack count
+//       atkPct?:    number,    — % added to battle ATK
+//       critDmg?:   number,    — flat % added to crit DMG
+//       critRate?:  number,    — flat % added to crit rate
+//       dmgPct?:    number,    — % added to DMG pool
+//     }),
+//     notes?: string,
+//   }
 //
-//       vertebrae:   Array<string> | null
-//                    — Which V levels this skill entry applies to.
-//                      e.g. ['v0','v1','v2'] or ['v6'].
-//                      null = applies at all vertebrae levels.
-//                      Use multiple entries with the same id but different vertebrae
-//                      arrays to represent skills that change at higher V.
+//   { type: 'toggle',
+//     key:    string,
+//     label:  string,
+//     condition?: string,      — short description of when to enable
+//     effect: {                — bonuses when toggled ON
+//       atkPct?:    number,
+//       dmgPct?:    number,
+//       critDmg?:   number,
+//       critRate?:  number,
+//       fixedDmgPct?: number,  — % of final DMG added as fixed (ignores DEF)
+//       fixedAtkPct?: number,  — % of applier ATK added as fixed DMG
+//       dmgMultiplier?: number,— multiply the current dmg result (e.g. x2 = 2)
+//     },
+//     notes?: string,
+//   }
 //
-//       cooldown:    number | null   — cooldown in turns (reserved for future use)
-//
-//       // optional
-//       canCrit:     bool     — defaults to true
-//       scalingStat: string   — 'ATK' (default) | 'HP' | 'DEF'
-//       notes:       string   — extra context shown in the skill card
-//     }
-//   ],
-//
-//   passives: [
-//     {
-//       field:  string  — input id to pre-fill (e.g. 'dmg_doll_passive')
-//       value:  number  — value to set (e.g. 20 for 20%)
-//       label:  string  — display label
-//     }
-//   ],
-//
-//   notes: string  — general kit notes
-// }
-//
-// VERTEBRAE VERSIONING
-// ─────────────────────
-// Add a second skill entry with the same id but different vertebrae to represent
-// a skill that improves at a certain V level. getSkillsForVertebrae() will pick
-// the correct version automatically.
-//
-// Example:
-//   { id: 'leva_s2', vertebrae: ['v0','v1','v2','v3'], multiplier: 1.00, ... }
-//   { id: 'leva_s2', vertebrae: ['v4','v5','v6'],      multiplier: 1.30, ... }
-//
-// MULTI-MULTIPLIER SKILLS
-// ────────────────────────
-// Use an array for skills with conditional/stack-based multipliers:
-//   multiplier: [
-//     { label: '0 stacks', value: 0.50 },
-//     { label: '1 stack',  value: 0.60 },
-//     { label: 'Max (4)',  value: 1.20 },
-//   ]
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DOLLS = [
@@ -80,21 +48,10 @@ const DOLLS = [
   //   class: 'Sentinel',
   //   ammoType: 'Light',
   //   phase: 'Burn',
-  //   skills: [
-  //     {
-  //       id: 'doll_s1',
-  //       name: 'Skill Name',
-  //       dmg_type: 'Physical',
-  //       skill_type: 'target',
-  //       description: 'Deals X% ATK to a single target.',
-  //       multiplier: 2.50,
-  //       vertebrae: null,
-  //       cooldown: null,
-  //       canCrit: true,
-  //       scalingStat: 'ATK',
-  //     },
-  //   ],
+  //   baseCritDmg: 150,    ← locked crit DMG pulled from this field on select
+  //   skills: [ ... ],
   //   passives: [],
+  //   mechanics: [],
   //   notes: '',
   // },
 
@@ -105,7 +62,9 @@ const DOLLS = [
     class: 'Sentinel',
     ammoType: 'Light',
     phase: 'Electric',
-    skills: [
+    baseCritDmg: 150,   // update with actual base value when confirmed
+
+        skills: [
 
       {
         id: 'leva_basic',
@@ -257,7 +216,7 @@ const DOLLS = [
         skill_type: 'melee',
         description: 'At the start of the turn, Leva gains 2 stacks of Superconductive Code. In addition, when Leva triggers a Voltage tile reaction, or when an enemy with Negative Charge dies within her attack range, Leva gains 1 stacks of Superconductive Code. If Leva has Positive Charge, Electric damage dealt is increased by 25%.\nLeva\'s attack is increased by 15% the first time she reaches 4 stacks of Superconductive Code in battle.\nWhen Negative Charge is applied to an enemy target within range , Leva performs one instance of Emergency Support, dealing melee Electric damage equal to 60% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. If this kills the target, she applies Negative Charge to the nearest enemy unit within range for 1 turn. This effect can be triggered up to 3 times per turn. She can also use the active skill Superconductive Strike after using the active skill Rational Suppression or Ordered Disruption. ',
         multiplier: 0.60,
-        vertebrae: ['v1', 'v2', 'v3', 'v4', 'v5'],
+        vertebrae: ['v6'],
         cooldown: null,
         canCrit: false,
         scalingStat: 'ATK',
@@ -304,10 +263,111 @@ const DOLLS = [
         scalingStat: 'ATK',
         notes: 'Stability damage: 1 / 2 / 4 / 8 points for 1–4 stacks respectively.',
       },
+    ],
+
+    passives: [
+      // S1 always grants +25% crit DMG for its own attack — pre-fill critdmg_extra
+      // Note: this will be overridden by the S1 toggle in mechanics for per-skill use
+    ],
+
+    // ── Leva-specific mechanics ───────────────────────────────────────────
+    mechanics: [
+
+      // ── Superconductive Code ─────────────────────────────────────────────
+      {
+        type: 'stack_selector',
+        key: 'sc_stacks',
+        label: 'Superconductive Code Stacks',
+        max: 4,
+        // Per-stack: +5% crit rate, +7% crit DMG. At 4 stacks: +15% ATK, +10% ATK (chain)
+        effect: (stacks) => ({
+          critRate: stacks * 5,
+          critDmg:  stacks * 7,
+          atkPct:   stacks >= 4 ? 25 : 0,  // +15% passive + +10% chain at max stacks
+        }),
+        notes: '+5% Crit Rate and +7% Crit DMG per stack. At 4 stacks: +15% ATK (passive) and +10% ATK (Superconductive Chain) activate.',
+      },
+
+      // ── S1 Crit DMG bonus (per-attack) ───────────────────────────────────
+      {
+        type: 'toggle',
+        key: 's1_crit_bonus',
+        label: 'S1 — +25% Crit DMG (this attack)',
+        condition: 'Using Rational Suppression (S1)',
+        effect: { critDmg: 25 },
+        notes: 'Only applies to the S1 attack. Toggle on when calculating S1 damage.',
+      },
+
+      // ── Negative Charge on target ─────────────────────────────────────────
+      {
+        type: 'toggle',
+        key: 'neg_charge_dmg',
+        label: 'Neg Charge — +30% DMG (targeted)',
+        condition: 'Target has Negative Charge debuff',
+        effect: { dmgPct: 30 },
+        notes: 'Applies to targeted attacks against a Negative Charge target.',
+      },
+
+      {
+        type: 'toggle',
+        key: 'neg_charge_fixed',
+        label: 'Neg Charge — +3% Fixed DMG (reapplied)',
+        condition: 'Negative Charge reapplied to target',
+        effect: { fixedDmgPct: 3 },
+        notes: '+3% of final DMG as additional fixed damage when Neg Charge is reapplied.',
+      },
+
+      // ── Voltage Tiles ─────────────────────────────────────────────────────
+      {
+        type: 'toggle',
+        key: 'voltage_tile_dmg',
+        label: 'Voltage Tiles — +30% DMG (AoE)',
+        condition: 'Attack on or near Voltage Tiles (AoE)',
+        effect: { dmgPct: 30 },
+        notes: 'AoE attacks on Voltage tiles deal +30% DMG.',
+      },
+
+      {
+        type: 'toggle',
+        key: 'voltage_tile_elec',
+        label: 'Voltage Tiles — +60% DMG (Electric/Hydro AoE)',
+        condition: 'AoE attack is Electric or Hydro type',
+        effect: { dmgPct: 60 },
+        notes: 'Replaces the base +30% — select this instead when skill is Electric/Hydro. Do not stack both.',
+      },
+
+      {
+        type: 'toggle',
+        key: 'voltage_tile_boss',
+        label: 'Voltage Tiles — ×2 vs Large/Boss target',
+        condition: 'Target is a large enemy or boss',
+        effect: { dmgMultiplier: 2 },
+        notes: 'Doubles the Voltage Tile bonus DMG against large/boss targets.',
+      },
+
+      // ── S2 Neg Charge bonus ───────────────────────────────────────────────
+      {
+        type: 'toggle',
+        key: 's2_neg_charge',
+        label: 'S2 — +30% DMG vs Neg Charge target (AoE)',
+        condition: 'Using Ordered Disruption (S2) and target has Negative Charge',
+        effect: { dmgPct: 30 },
+        notes: 'Additional +30% DMG on top of any other bonuses. Do not stack with Neg Charge toggle above if both apply.',
+      },
+
+      // ── Positive Charge buff (passive) ────────────────────────────────────
+      {
+        type: 'toggle',
+        key: 'positive_charge',
+        label: 'Passive — +25% Electric DMG (Positive Charge buff)',
+        condition: 'Leva has the Positive Charge buff',
+        effect: { dmgPct: 25 },
+        notes: '+25% Electric DMG dealt. Only activate when Leva has Positive Charge.',
+      },
 
     ],
-    passives: [],
-    notes: 'Add 15% to def reduction',
+
+    notes: 'Electric Sentinel. Core mechanics: Superconductive Code stacks (0–4), Voltage Tiles, Negative Charge conditional bonuses.',
   },
 
 ];
@@ -316,25 +376,14 @@ const DOLLS = [
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Returns the full doll object by id, or undefined. */
 function getDoll(id) {
   return DOLLS.find(d => d.id === id);
 }
 
-/** Returns all dolls sorted alphabetically by name. */
 function getDollList() {
   return [...DOLLS].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * Returns the skills for a doll filtered to those valid at the given vertebrae level.
- * When multiple entries share the same id, only the first one matching the current
- * vertebrae level is returned (vertebrae-specific entries take priority).
- *
- * @param {object} doll
- * @param {string} vLevel — e.g. 'v0', 'v3', 'v6'
- * @returns {Array} filtered, deduplicated skill list
- */
 function getSkillsForVertebrae(doll, vLevel) {
   if (!doll) return [];
   const seen = new Set();

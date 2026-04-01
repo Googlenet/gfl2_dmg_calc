@@ -312,6 +312,94 @@ function renderCritToggles() {
     </table>`;
 }
 
+// ── Doll Mechanics Panel ──────────────────────────────────────────────────────
+
+window.dollMechState = {};  // exposed globally so calculator.js can read it
+
+function onDollMechToggle(key) {
+  window.dollMechState[key] = !window.dollMechState[key];
+  renderDollMechanics();
+  updateLive();
+}
+
+function onDollMechStack(key, val) {
+  // clicking active value turns it off
+  window.dollMechState[key] = window.dollMechState[key] === val ? 0 : val;
+  renderDollMechanics();
+  updateLive();
+}
+
+function renderDollMechanics() {
+  const panel = document.getElementById('doll-mechanics-panel');
+  if (!panel) return;
+
+  if (!activeDoll?.mechanics?.length) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  const mechHtml = activeDoll.mechanics.map(mech => {
+    if (mech.type === 'stack_selector') {
+      const active = window.dollMechState[mech.key] || 0;
+      const eff    = active > 0 ? mech.effect(active) : {};
+      const badges = Object.entries(eff)
+        .filter(([, v]) => v)
+        .map(([k, v]) => `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(255,170,0,0.15);color:var(--crit);">${k} +${v}${k==='atkPct'||k==='dmgPct'||k==='critDmg'||k==='critRate'?'%':''}</span>`)
+        .join('');
+      const buttons = Array.from({length: mech.max}, (_, i) => {
+        const n = i + 1;
+        const isActive = active === n;
+        return `<button type="button" onclick="onDollMechStack('${mech.key}',${n})"
+          style="padding:4px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;
+                 background:${isActive?'rgba(255,170,0,0.2)':'var(--panel2)'};
+                 border:1px solid ${isActive?'var(--crit)':'var(--border)'};
+                 color:${isActive?'var(--crit)':'var(--text-dim)'};
+                 border-radius:3px;cursor:pointer;margin-right:3px;">${n}</button>`;
+      }).join('');
+      return `
+        <div style="padding:8px 0;border-bottom:1px solid rgba(30,58,95,0.4);">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-bright);margin-bottom:6px;">
+            ${mech.label}${badges}
+          </div>
+          <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;">
+            <button type="button" onclick="onDollMechStack('${mech.key}',0)"
+              style="padding:4px 9px;font-family:'Share Tech Mono',monospace;font-size:11px;
+                     background:${active===0?'rgba(255,170,0,0.2)':'var(--panel2)'};
+                     border:1px solid ${active===0?'var(--crit)':'var(--border)'};
+                     color:${active===0?'var(--crit)':'var(--text-dim)'};
+                     border-radius:3px;cursor:pointer;margin-right:3px;">0</button>
+            ${buttons}
+          </div>
+          ${mech.notes ? `<div style="font-size:10px;color:var(--text-dim);margin-top:5px;font-family:'Share Tech Mono',monospace;">${mech.notes}</div>` : ''}
+        </div>`;
+
+    } else if (mech.type === 'toggle') {
+      const on = !!window.dollMechState[mech.key];
+      const effEntries = Object.entries(mech.effect).filter(([,v]) => v);
+      const badge = on
+        ? effEntries.map(([k,v]) => `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(167,139,250,0.15);color:var(--dmg-color);">${k} +${v}${typeof v==='number'&&k!=='dmgMultiplier'?'%':k==='dmgMultiplier'?'×':''}</span>`).join('')
+        : '';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,58,95,0.4);gap:10px;">
+          <div style="flex:1;">
+            <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-bright);">${mech.label}${badge}</div>
+            ${mech.condition ? `<div style="font-size:10px;color:var(--text-dim);margin-top:2px;font-family:'Share Tech Mono',monospace;">${mech.condition}</div>` : ''}
+            ${mech.notes ? `<div style="font-size:10px;color:var(--text-dim);margin-top:2px;font-family:'Share Tech Mono',monospace;">${mech.notes}</div>` : ''}
+          </div>
+          <input type="checkbox" class="atk-cb" ${on?'checked':''} onchange="onDollMechToggle('${mech.key}')" style="flex-shrink:0;">
+        </div>`;
+    }
+    return '';
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="panel" style="margin-bottom:14px;border-color:var(--crit);">
+      <div class="panel-label" style="color:var(--crit);">${activeDoll.name} — Kit Mechanics</div>
+      ${mechHtml}
+    </div>`;
+}
+
 // ── Skill Profile ─────────────────────────────────────────────────────────────
 
 let activeDoll      = null;
@@ -331,6 +419,14 @@ function populateDollSelector() {
 function onDollChange() {
   activeDoll = getDoll(document.getElementById('doll-select').value);
   activeMultIndex = 0;
+  // Reset all mechanic state when doll changes
+  window.dollMechState = {};
+  if (activeDoll?.mechanics) {
+    activeDoll.mechanics.forEach(m => {
+      window.dollMechState[m.key] = m.type === 'stack_selector' ? 0 : false;
+    });
+  }
+  renderDollMechanics();
   renderSkillSelector();
   applyDollPassives();
   updateLive();
@@ -575,7 +671,7 @@ function initEventListeners() {
 }
 
 function init() {
-  renderAtkBuffs();       // also calls renderAtkMultiBuffs
+  renderAtkBuffs();
   renderIchorSelector();
   renderDefDebuffs();
   renderDmgToggles();
@@ -583,7 +679,7 @@ function init() {
   renderPlatoonAtk();
   renderPlatoonDmg();
   populateDollSelector();
-  onDollChange();
+  onDollChange();         // also calls renderDollMechanics
   initEventListeners();
   updateLive();
 }
