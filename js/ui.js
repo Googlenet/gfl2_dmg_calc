@@ -383,21 +383,37 @@ function applyDollPassives() {
 // ── Live Update (display only) ────────────────────────────────────────────────
 
 function updateLive() {
+
+  // ATK
   const totalFlat    = getFlatATKSources();
+  const flatWhole    = getFlatATKWhole();
   const totalPct     = getAtkPctSources();
   const baseAtkTotal = getBaseAtkTotal();
   const atkIchorTotal= getAtkIchorTotal();
+  const ichorWhole   = getAtkIchorWhole();
   const battlePct    = getBattleAtkPct();
+  const atkFinal     = getAtkFinal();
+  const atkFinalWhole= Math.round(atkFinal);
 
-  // ATK
-  document.getElementById('total-flat-atk').textContent = fmt(totalFlat);
+  // Total Flat ATK: decimal (whole)
+  document.getElementById('total-flat-atk').textContent = `${fmt(totalFlat)} (${flatWhole.toLocaleString()})`;
+
+  // ATK% Boost parenthesis: % of whole flat
   document.getElementById('total-atk-pct').childNodes[0].textContent = `+${totalPct}% `;
-  document.getElementById('total-atk-pct-abs').textContent = `(+${fmt(totalFlat * totalPct / 100)})`;
+  document.getElementById('total-atk-pct-abs').textContent = `(+${fmt(flatWhole * totalPct / 100)})`;
+
+  // Base ATK Total: decimal only (no whole shown per example)
   document.getElementById('base-atk-total').textContent = fmt(baseAtkTotal);
-  document.getElementById('atk-ichor-total').textContent = fmt(atkIchorTotal);
+
+  // ATK + Ichor Total: decimal (whole)
+  document.getElementById('atk-ichor-total').textContent = `${fmt(atkIchorTotal)} (${ichorWhole.toLocaleString()})`;
+
+  // Battle ATK% parenthesis: % of ichor whole
   document.getElementById('total-battle-pct').childNodes[0].textContent = `+${battlePct}% `;
-  document.getElementById('total-battle-pct-abs').textContent = `(+${fmt(atkIchorTotal * battlePct / 100)})`;
-  document.getElementById('in-battle-atk').textContent = fmt(getAtkFinal());
+  document.getElementById('total-battle-pct-abs').textContent = `(+${fmt(ichorWhole * battlePct / 100)})`;
+
+  // In-Battle ATK: decimal (whole)
+  document.getElementById('in-battle-atk').textContent = `${fmt(atkFinal)} (${atkFinalWhole.toLocaleString()})`;
 
   // DEF
   const baseDef  = parseFloat(document.getElementById('def_base')?.value) || 0;

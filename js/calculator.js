@@ -21,22 +21,33 @@ function getFlatATKSources() {
   return ids.reduce((sum, id) => sum + readNum(id), 0);
 }
 
+// Total Flat ATK rounded to whole number — used as the base for % calculations
+function getFlatATKWhole() {
+  return Math.ceil(getFlatATKSources());
+}
+
 function getAtkPctSources() {
   const ids = ['atk_wpn_pct','atk_attach_pct','atk_helix_node_pct','atk_helix_extra_pct','atk_keys_pct','atk_covenant_pct','atk_fixedkey_pct'];
   return ids.reduce((sum, id) => sum + readNum(id), 0);
 }
 
+// Base ATK Total: whole(flatATK) × (1 + pct%) — kept as decimal for display
 function getBaseAtkTotal() {
-  return getFlatATKSources() * (1 + getAtkPctSources() / 100);
+  return getFlatATKWhole() * (1 + getAtkPctSources() / 100);
 }
 
+// ATK + Ichor Total: baseAtkTotal (decimal) + ichor flat
 function getAtkIchorTotal() {
   return getBaseAtkTotal() + readNum('atk_ichor_flat_boost');
 }
 
+// ATK + Ichor rounded to whole — used as the base for battle % calculations
+function getAtkIchorWhole() {
+  return Math.ceil(getAtkIchorTotal());
+}
+
 function getBattleAtkPct() {
   let pct = 0;
-  // Attack Up I/II toggle
   for (const b of ATK_FIXED) {
     const state = atkToggleState[b.key];
     if (!state || b.type !== 'pct') continue;
@@ -49,8 +60,9 @@ function getBattleAtkPct() {
   return pct;
 }
 
+// In-Battle ATK: whole(ichorTotal) × (1 + battle%) — kept as decimal for display
 function getAtkFinal() {
-  return getAtkIchorTotal() * (1 + getBattleAtkPct() / 100);
+  return getAtkIchorWhole() * (1 + getBattleAtkPct() / 100);
 }
 
 // ── DEF Sources ───────────────────────────────────────────────────────────────
@@ -139,7 +151,7 @@ function calculate() {
   const ichorVal     = readNum('atk_ichor_flat_boost');
   const atkIchor     = getAtkIchorTotal();
   const battlePct    = getBattleAtkPct();
-  const dmgSum       = Math.round((dmgMult - 1) * 10000) / 100;
+  const dmgSum       = Math.ceil((dmgMult - 1) * 10000) / 100;
   const weakCount    = (document.getElementById('ammoWeak')?.checked ? 1 : 0) + (document.getElementById('phaseWeak')?.checked ? 1 : 0);
 
   const steps = [
