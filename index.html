@@ -135,7 +135,8 @@
     <div class="stat-row"><span class="stat-label">Remolding ATK %</span><div class="stat-input"><input type="number" id="atk_remold_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys ATK % Buff</span><div class="stat-input"><input type="number" id="battle_fixedkey_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Skill-based ATK % Buff</span><div class="stat-input"><input type="number" id="battle_skill_pct" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Food ATK % Buff</span><div class="stat-input"><input type="number" id="food_atk_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Food ATK % Buff</span><div class="stat-input"><input type="number" id="food_atk_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" id="kit-atk-pct-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--crit);">Kit Mech ATK %</span><div class="stat-input"><input type="number" id="kit_atk_pct" value="0" min="0" readonly style="opacity:0.6;cursor:not-allowed;color:var(--crit);"><div class="suf">from kit</div></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row">
       <span class="stat-total-label">Total Battle ATK% Buff</span>
@@ -218,21 +219,16 @@
     </div>
 
     <div class="stat-divider" style="margin-top:10px;"></div>
+    <div class="stat-row" id="kit-dmg-pct-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--crit);">Kit Mech DMG %</span><div class="stat-input"><input type="number" id="kit_dmg_pct" value="0" min="0" readonly style="opacity:0.6;cursor:not-allowed;color:var(--crit);"><div class="suf">from kit</div></div></div>
+    <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-total-row">
       <span class="stat-total-label">Total Σ DMG Buff</span>
       <span class="stat-total-val" style="color:var(--dmg-color);text-shadow:0 0 10px rgba(167,139,250,0.4);" id="dmg-total-display">+0% → ×1.000</span>
     </div>
   </div>
 
-  <!-- ── Skill ── -->
-  <div class="panel" style="margin-bottom:14px;">
-    <div class="corner-deco"></div>
-    <div class="panel-label">Skill</div>
-    <div class="stat-row" style="border-bottom:none;">
-      <span class="stat-label">Skill Multiplier %</span>
-      <div class="stat-input"><input type="number" id="skillmod" value="250" min="0" oninput="updateLive()"><div class="suf">e.g. 250 = 2.5×</div></div>
-    </div>
-  </div>
+  <!-- hidden skillmod — set programmatically by skill selection, not user-editable -->
+  <input type="hidden" id="skillmod" value="250">
 
   <!-- ── Crit Stats ── -->
   <div class="panel" style="margin-bottom:14px;">
@@ -260,10 +256,6 @@
   <div class="panel full" style="margin-bottom:14px;">
     <div class="panel-label">Modifiers</div>
     <div class="modifiers-grid">
-      <div class="toggle-row">
-        <div class="toggle-info"><strong>Critical Hit</strong><span>Apply CritDMG multiplier</span></div>
-        <label class="toggle crit"><input type="checkbox" id="isCrit"><span class="toggle-track"></span></label>
-      </div>
       <div class="toggle-row">
         <div class="toggle-info"><strong>Ammo Type Match</strong><span>+10% weakness bonus</span></div>
         <label class="toggle"><input type="checkbox" id="ammoWeak"><span class="toggle-track"></span></label>
@@ -298,6 +290,28 @@
       <div class="result-card highlight">
         <div class="result-card-label">Average (w/ Crit Rate)</div>
         <div class="result-value avg-val" id="result-avg">—</div>
+      </div>
+    </div>
+    <div id="fixed-dmg-row" style="display:none; margin-top:10px;">
+      <div class="results-grid" style="grid-template-columns:1fr;">
+        <div class="result-card" style="border-color:var(--crit);background:rgba(255,170,0,0.05);">
+          <div class="result-card-label" style="color:var(--crit);">Fixed DMG (kit — ignores DEF)</div>
+          <div class="result-value" id="result-fixed" style="color:var(--crit);text-shadow:var(--glow-crit);">—</div>
+        </div>
+      </div>
+      <div class="results-grid" style="margin-top:6px;">
+        <div class="result-card" style="opacity:0.85;">
+          <div class="result-card-label">Total Normal</div>
+          <div class="result-value" id="result-total-normal">—</div>
+        </div>
+        <div class="result-card crit-card" style="opacity:0.85;">
+          <div class="result-card-label">Total Critical</div>
+          <div class="result-value crit-val" id="result-total-crit">—</div>
+        </div>
+        <div class="result-card highlight" style="opacity:0.85;">
+          <div class="result-card-label">Total Average</div>
+          <div class="result-value avg-val" id="result-total-avg">—</div>
+        </div>
       </div>
     </div>
     <div class="breakdown">

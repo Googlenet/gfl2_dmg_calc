@@ -70,6 +70,7 @@ function getBattleAtkPct() {
   pct += readNum('battle_skill_pct');
   pct += readNum('food_atk_pct');
   pct += getPlatoonAtkBonus();
+  pct += getDollMechanicsResult().atkPct;
   return pct;
 }
 
@@ -110,6 +111,7 @@ function getDmgMult() {
     sum += state === 'I' ? b.valI : b.valII;
   }
   sum += getPlatoonDmgBonus();
+  sum += getDollMechanicsResult().dmgPct;
   return 1 + sum / 100;
 }
 
@@ -136,10 +138,11 @@ function getEffectiveCritStats() {
 // dollMechState is defined and managed in ui.js
 
 function getDollMechanicsResult() {
-  const out = { atkPct: 0, dmgPct: 0, critDmg: 0, critRate: 0, fixedDmgPct: 0, fixedAtkPct: 0, dmgMultiplier: 1 };
+  const out = { atkPct: 0, dmgPct: 0, critDmg: 0, critRate: 0, fixedDmgPct: 0, fixedAtkPct: 0, dmgMultiplier: 1, fixedAtkMultiplier: 1 };
   if (!window.dollMechState || !activeDoll?.mechanics) return out;
 
   for (const mech of activeDoll.mechanics) {
+    if (mech.vertebrae && !mech.vertebrae.includes(activeVertebrae)) continue;
     if (mech.type === 'stack_selector') {
       const stacks = window.dollMechState[mech.key] || 0;
       if (stacks > 0) {
@@ -157,9 +160,8 @@ function getDollMechanicsResult() {
         out.critRate      += mech.effect.critRate       || 0;
         out.fixedDmgPct   += mech.effect.fixedDmgPct   || 0;
         out.fixedAtkPct   += mech.effect.fixedAtkPct   || 0;
-        if (mech.effect.dmgMultiplier) {
-          out.dmgMultiplier *= mech.effect.dmgMultiplier;
-        }
+        if (mech.effect.dmgMultiplier)      out.dmgMultiplier      *= mech.effect.dmgMultiplier;
+        if (mech.effect.fixedAtkMultiplier) out.fixedAtkMultiplier *= mech.effect.fixedAtkMultiplier;
       }
     }
   }
@@ -180,12 +182,10 @@ function getWeaknessMult() {
 
 function calculate() {
   const mech        = getDollMechanicsResult();
-  const baseAtk     = getAtkFinal();
-  const atkFinal    = baseAtk * (1 + mech.atkPct / 100);
+  const atkFinal    = getAtkFinal();
   const finalDef    = getFinalDef();
   const baseDmgMult = getDmgMult();
-  const mechDmgMult = 1 + mech.dmgPct / 100;
-  const dmgMult     = baseDmgMult * mechDmgMult * mech.dmgMultiplier;
+  const dmgMult     = baseDmgMult * mech.dmgMultiplier;
   const weakMult    = getWeaknessMult();
   const skillPct    = readNum('skillmod', 100);
   const skillMod    = skillPct / 100;
@@ -202,11 +202,11 @@ function calculate() {
 
   // Fixed damage added after main calc — ignores DEF/multipliers
   const fixedDmg    = Math.ceil(normalDmg * mech.fixedDmgPct / 100)
-                    + Math.ceil(atkFinal   * mech.fixedAtkPct / 100);
+                    + Math.ceil(atkFinal   * mech.fixedAtkPct * mech.fixedAtkMultiplier / 100);
 
-  const normalOut   = Math.ceil(normalDmg)  + fixedDmg;
-  const critOut     = Math.ceil(critDmgVal) + fixedDmg;
-  const avgOut      = Math.ceil(avgDmg)     + fixedDmg;
+  const normalOut   = Math.ceil(normalDmg);
+  const critOut     = Math.ceil(critDmgVal);
+  const avgOut      = Math.ceil(avgDmg);
 
   // Breakdown
   const totalFlat    = getFlatATKSources();
@@ -216,7 +216,6 @@ function calculate() {
   const battleFlatVal= battleFlat - baseAtkTotal;
   const battlePct    = getBattleAtkPct();
   const baseDmgSum   = Math.ceil((baseDmgMult - 1) * 10000) / 100;
-  const mechDmgSum   = mech.dmgPct;
   const weakCount    = (document.getElementById('ammoWeak')?.checked ? 1 : 0)
                      + (document.getElementById('phaseWeak')?.checked ? 1 : 0);
 
@@ -224,19 +223,18 @@ function calculate() {
     { cls:'atk-step', name:'Flat ATK Sources',                                               val: fmt(totalFlat),                                      col:'atk-col' },
     { cls:'atk-step', name:`× ATK% Boost (+${totalPct}%)`,                                   val: `→ ${fmt(baseAtkTotal)}`,                            col:'atk-col' },
     battleFlatVal > 0   ? { cls:'atk-step', name:`+ In-Battle Flat (+${fmt(battleFlatVal)})`,val: `→ ${fmt(battleFlat)}`,                              col:'atk-col' } : null,
-    battlePct > 0       ? { cls:'atk-step', name:`× Battle ATK% (+${battlePct}%)`,           val: `→ ${fmt(baseAtk)}`,                                col:'atk-col' } : null,
-    mech.atkPct > 0     ? { cls:'atk-step', name:`× Mech ATK% (+${mech.atkPct}%)`,           val: `→ ${fmt(atkFinal)}  [Final ATK]`,                  col:'atk-col' } : null,
+    battlePct > 0       ? { cls:'atk-step', name:`× Battle ATK% (+${battlePct}%)`,           val: `→ ${fmt(atkFinal)}  [Final ATK]`,                  col:'atk-col' } : null,
     { cls:'',           name:`Final DEF  [base ${fmt(readNum('def_base'))} → reduced]`,      val: fmt(finalDef),                                       col:''        },
     { cls:'',           name:'÷ DEF Formula  [ATK/(1+DEF/ATK)]',                             val: fmt(effAtk),                                         col:''        },
-    { cls:'dmg-step',   name:`× DMG Pool (+${baseDmgSum}%${mechDmgSum>0?' +'+mechDmgSum+'% mech':''}${mech.dmgMultiplier>1?' ×'+mech.dmgMultiplier:''})`,
+    { cls:'dmg-step',   name:`× DMG Pool (+${baseDmgSum}%${mech.dmgMultiplier>1?' ×'+mech.dmgMultiplier:''})`,
                                                                                               val: `×${dmgMult.toFixed(3)}  → ${fmt(effAtk*dmgMult)}`,  col:'dmg-col' },
     { cls:'',           name:`× CritDMG  [normal ×1.00 | crit ×${critMult.toFixed(2)}]`,    val: 'see cards →',                                       col:''        },
     { cls:'',           name:`× Weakness  [${weakCount} match × 10%]`,                       val: `×${weakMult.toFixed(2)}`,                           col:''        },
     { cls:'',           name:`× Skill Mod  [${skillPct}%]`,                                  val: `×${skillMod.toFixed(3)}`,                           col:''        },
-    fixedDmg > 0   ? { cls:'active', name:'+ Fixed DMG (mech bonus, ignores DEF)',           val: `+${fixedDmg.toLocaleString()}`,                     col:''        } : null,
     { cls:'active',     name:'= Normal Hit',                                                  val: normalOut.toLocaleString(),                          col:''        },
     { cls:'active',     name:'= Critical Hit',                                                val: critOut.toLocaleString(),                            col:''        },
     { cls:'active',     name:`= Avg (${critRate}% crit rate)`,                               val: avgOut.toLocaleString(),                             col:''        },
+    fixedDmg > 0   ? { cls:'active', name:'+ Fixed DMG (kit, ignores DEF)',                  val: `+${fixedDmg.toLocaleString()}`,                     col:''        } : null,
   ].filter(Boolean);
 
   return { normalDmg: normalOut, critDmgVal: critOut, avgDmg: avgOut, fixedDmg, steps };

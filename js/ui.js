@@ -247,8 +247,7 @@ const DMG_TOGGLES = [
   { key:'targeted_boost',  label:'Targeted Attack Boost',valI:10, valII:20 },
   { key:'aoe_boost',       label:'AoE Attack Boost',     valI:10, valII:20 },
   { key:'vulnerable',      label:'Vulnerable',           valI:10, valII:20 },
-  { key:'support_boost_ab',label:'Support Boost 15/30%', valI:15, valII:30 },
-  { key:'support_boost',   label:'Support Boost',        valI:10, valII:20 },
+  { key:'support_boost_ab',label:'Support Boost',        valI:15, valII:30 },
 ];
 const dmgToggleState = {};
 DMG_TOGGLES.forEach(b => { dmgToggleState[b.key] = null; });
@@ -339,7 +338,9 @@ function renderDollMechanics() {
   }
   panel.style.display = 'block';
 
-  const mechHtml = activeDoll.mechanics.map(mech => {
+  const mechHtml = activeDoll.mechanics.filter(mech =>
+    !mech.vertebrae || mech.vertebrae.includes(activeVertebrae)
+  ).map(mech => {
     if (mech.type === 'stack_selector') {
       const active = window.dollMechState[mech.key] || 0;
       const eff    = active > 0 ? mech.effect(active) : {};
@@ -378,7 +379,11 @@ function renderDollMechanics() {
       const on = !!window.dollMechState[mech.key];
       const effEntries = Object.entries(mech.effect).filter(([,v]) => v);
       const badge = on
-        ? effEntries.map(([k,v]) => `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(167,139,250,0.15);color:var(--dmg-color);">${k} +${v}${typeof v==='number'&&k!=='dmgMultiplier'?'%':k==='dmgMultiplier'?'×':''}</span>`).join('')
+        ? effEntries.map(([k,v]) => {
+            const isMultiplier = k === 'dmgMultiplier' || k === 'fixedAtkMultiplier';
+            const display = isMultiplier ? `×${v}` : `+${v}%`;
+            return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(167,139,250,0.15);color:var(--dmg-color);">${k} ${display}</span>`;
+          }).join('')
         : '';
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,58,95,0.4);gap:10px;">
@@ -435,7 +440,16 @@ function onDollChange() {
 function onVertebraeChange() {
   activeVertebrae = document.getElementById('vertebrae-select').value;
   activeMultIndex = 0;
+  // Reset state for any mechanics that are no longer valid at this V level
+  if (activeDoll?.mechanics) {
+    activeDoll.mechanics.forEach(m => {
+      if (m.vertebrae && !m.vertebrae.includes(activeVertebrae)) {
+        window.dollMechState[m.key] = m.type === 'stack_selector' ? 0 : false;
+      }
+    });
+  }
   renderSkillSelector();
+  renderDollMechanics();
   updateLive();
 }
 
@@ -475,6 +489,37 @@ function onSkillChange() {
   updateLive();
 }
 
+let activeStackBonusStacks = 0;  // persisted so renderSkillCard doesn't fight user input
+
+function onStackBonusInput(val) {
+  const rate      = activeSkill?.stackRate ?? 0;
+  const maxStack  = activeSkill?.stackMax  ?? 0;
+  const stacks    = Math.min(Math.max(parseFloat(val) || 0, 0), maxStack);
+  const baseTotal = Array.isArray(activeSkill?.multiplier)
+    ? activeSkill.multiplier.reduce((s, h) => s + h.value, 0)
+    : 0;
+  activeStackBonusStacks = stacks;
+  const combined  = baseTotal + stacks * rate / 100;
+  const el = document.getElementById('skillmod');
+  if (el) el.value = (combined * 100).toFixed(0);
+  const disp = document.getElementById('stack-bonus-display');
+  const scaleStat = activeSkill?.scalingStat ?? 'ATK';
+  if (disp) disp.textContent = baseTotal > 0
+    ? `Combined: ${(baseTotal * 100).toFixed(0)}% + ${stacks}×${rate}% = ${(combined * 100).toFixed(0)}% ${scaleStat}`
+    : `Effective multiplier: ${stacks}×${rate}% = ${stacks * rate}% ${scaleStat}`;
+  updateLive();
+}
+
+function onOverflowStabInput(val) {
+  const overflow = parseFloat(val) || 0;
+  const rate = activeSkill?.overflowRate ?? 5;
+  const el = document.getElementById('skillmod');
+  if (el) el.value = (overflow * rate).toFixed(0);
+  const disp = document.getElementById('overflow-mult-display');
+  if (disp) disp.textContent = `Effective multiplier: ${overflow * rate}% ATK  [×${rate}% per pt]`;
+  updateLive();
+}
+
 // Called when user picks a multiplier option on a multi-mult skill
 function onMultSelect(index) {
   activeMultIndex = activeMultIndex === index ? 0 : index;
@@ -497,7 +542,66 @@ function renderSkillCard() {
   const typeBadge = `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(0,170,255,0.1);color:var(--accent);margin-left:4px;">${activeSkill.skill_type}</span>`;
 
   let multSection = '';
-  if (isMulti) {
+  if (activeSkill.scalingType === 'stack_bonus' && !activeSkill.multiHit) {
+    const rate     = activeSkill.stackRate ?? 0;
+    const maxStack = activeSkill.stackMax  ?? 0;
+    const stacks   = activeStackBonusStacks;
+    multSection = `
+      <div style="margin-top:10px;">
+        <div class="skill-card-name" style="margin-bottom:6px;">${activeSkill.stackLabel ?? 'Stacks'} (max ${maxStack})</div>
+        <div class="stat-row" style="border-bottom:none;margin:0;">
+          <span class="stat-label" style="font-size:11px;">Stacks on target</span>
+          <div class="stat-input">
+            <input type="number" id="stack-bonus-input" value="${stacks}" min="0" max="${maxStack}"
+              style="width:80px;"
+              oninput="onStackBonusInput(this.value)">
+            <div class="suf">×+${rate}%</div>
+          </div>
+        </div>
+        <div class="skill-card-mult" style="margin-top:8px;" id="stack-bonus-display">
+          Effective multiplier: ${stacks}×${rate}% = ${stacks * rate}% ${activeSkill.scalingStat ?? 'ATK'}
+        </div>
+      </div>`;
+  } else if (activeSkill.scalingType === 'stability_overflow') {
+    const rate = activeSkill.overflowRate ?? 5;
+    const current = readNum('skillmod', 0);
+    const overflow = current > 0 ? Math.round(current / rate) : 0;
+    multSection = `
+      <div style="margin-top:10px;">
+        <div class="skill-card-name" style="margin-bottom:6px;">Overflow Stability Damage</div>
+        <div class="stat-row" style="border-bottom:none;margin:0;">
+          <span class="stat-label" style="font-size:11px;">Overflow Stab Dealt</span>
+          <div class="stat-input">
+            <input type="number" id="overflow-stab-input" value="${overflow}" min="0"
+              style="width:80px;"
+              oninput="onOverflowStabInput(this.value)">
+            <div class="suf">pts</div>
+          </div>
+        </div>
+        <div class="skill-card-mult" style="margin-top:8px;" id="overflow-mult-display">
+          Effective multiplier: ${overflow * rate}% ATK  [×${rate}% per pt]
+        </div>
+      </div>`;
+  } else if (isMulti && activeSkill.multiHit) {
+    const baseTotal = activeSkill.multiplier.reduce((s, h) => s + h.value, 0);
+    const scaleStat = activeSkill.scalingStat ?? 'ATK';
+    multSection = `
+      <div style="margin-top:10px;">
+        <div class="skill-card-name" style="margin-bottom:6px;">Multi-Hit</div>
+        <table class="atk-buff-table" style="margin-top:0;">
+          <tbody>
+            ${activeSkill.multiplier.map(hit => `
+              <tr class="atk-buff-row">
+                <td class="atk-buff-name">${hit.label}</td>
+                <td class="atk-buff-name" style="color:var(--atk-color);text-align:right;padding-right:8px;">${(hit.value * 100).toFixed(0)}% ${scaleStat}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="skill-card-mult" style="margin-top:8px;">
+          Combined: ${(baseTotal * 100).toFixed(0)}% ${scaleStat}
+        </div>
+      </div>`;
+  } else if (isMulti) {
     // Render mutually exclusive checkboxes for each multiplier option
     multSection = `
       <div style="margin-top:10px;">
@@ -538,12 +642,26 @@ function renderSkillCard() {
 }
 
 function applySkillToCalc() {
-  if (!activeSkill || activeSkill.multiplier === null) return;
   const el = document.getElementById('skillmod');
-  if (!el) return;
-  const val = Array.isArray(activeSkill.multiplier)
-    ? activeSkill.multiplier[activeMultIndex].value
-    : activeSkill.multiplier;
+  if (!el || !activeSkill) return;
+  if (activeSkill.scalingType === 'stability_overflow') {
+    el.value = 0;
+    return;
+  }
+  if (activeSkill.scalingType === 'stack_bonus') {
+    activeStackBonusStacks = 0;
+    el.value = 0;
+    return;
+  }
+  if (activeSkill.multiplier === null) return;
+  let val;
+  if (activeSkill.multiHit) {
+    val = activeSkill.multiplier.reduce((s, h) => s + h.value, 0);
+  } else if (Array.isArray(activeSkill.multiplier)) {
+    val = activeSkill.multiplier[activeMultIndex].value;
+  } else {
+    val = activeSkill.multiplier;
+  }
   el.value = (val * 100).toFixed(0);
 }
 
@@ -572,6 +690,8 @@ function applyDollPassives() {
 
 function updateLive() {
 
+  const mech = getDollMechanicsResult();
+
   // ATK
   const totalFlat      = getFlatATKSources();
   const flatWhole      = getFlatATKWhole();
@@ -592,6 +712,19 @@ function updateLive() {
   document.getElementById('total-battle-pct-abs').textContent = `(+${fmt(battleFlatWhole * battlePct / 100)})`;
   document.getElementById('in-battle-atk').textContent = `${fmt(atkFinal)} (${atkFinalWhole.toLocaleString()})`;
 
+  // Kit mech ATK% read-only row
+  const kitAtkRow = document.getElementById('kit-atk-pct-row');
+  const kitAtkInput = document.getElementById('kit_atk_pct');
+  if (kitAtkRow && kitAtkInput) {
+    if (mech.atkPct > 0) {
+      kitAtkRow.style.display = '';
+      kitAtkInput.value = mech.atkPct;
+    } else {
+      kitAtkRow.style.display = 'none';
+      kitAtkInput.value = 0;
+    }
+  }
+
   renderIchorSelector();
 
   // DEF
@@ -605,15 +738,40 @@ function updateLive() {
   document.getElementById('def-reduction-total').textContent = `${getTotalDefReduction()}%`;
   document.getElementById('def-final').textContent    = fmt(getFinalDef());
 
-  // DMG
+  // Kit DMG% read-only row
+  const kitDmgRow   = document.getElementById('kit-dmg-pct-row');
+  const kitDmgInput = document.getElementById('kit_dmg_pct');
+  if (kitDmgRow && kitDmgInput) {
+    if (mech.dmgPct > 0) {
+      kitDmgRow.style.display = '';
+      kitDmgInput.value = mech.dmgPct;
+    } else {
+      kitDmgRow.style.display = 'none';
+      kitDmgInput.value = 0;
+    }
+  }
+
+  // DMG total display
   const dmgMult = getDmgMult();
   const dmgSum  = Math.ceil((dmgMult - 1) * 10000) / 100;
-  document.getElementById('dmg-total-display').textContent = `+${dmgSum}% → ×${dmgMult.toFixed(3)}`;
+  const fullDmgMult = dmgMult * mech.dmgMultiplier;
+  let dmgHtml = `+${dmgSum}%`;
+  if (mech.dmgMultiplier > 1) {
+    const kitStyle = `font-size:10px;padding:1px 5px;border-radius:3px;margin-left:6px;background:rgba(167,139,250,0.15);color:var(--dmg-color);font-family:'Share Tech Mono',monospace;`;
+    dmgHtml += ` <span style="${kitStyle}">×${mech.dmgMultiplier} kit</span>`;
+  }
+  dmgHtml += ` → ×${fullDmgMult.toFixed(3)}`;
+  document.getElementById('dmg-total-display').innerHTML = dmgHtml;
 
-  // Crit
+  // Crit (including mech contributions)
   const { critDmg, critRate } = getEffectiveCritStats();
-  document.getElementById('crit-dmg-display').textContent  = `${critDmg}%`;
-  document.getElementById('crit-rate-display').textContent = `${critRate}%`;
+  const totalCritDmg  = Math.min(critDmg  + mech.critDmg,  9999);
+  const totalCritRate = Math.min(critRate + mech.critRate, 100);
+  const critStyle = `font-size:10px;padding:1px 5px;border-radius:3px;margin-left:6px;background:rgba(255,170,0,0.15);color:var(--crit);font-family:'Share Tech Mono',monospace;`;
+  const critDmgBadge  = mech.critDmg  > 0 ? ` <span style="${critStyle}">+${mech.critDmg}% kit</span>`  : '';
+  const critRateBadge = mech.critRate > 0 ? ` <span style="${critStyle}">+${mech.critRate}% kit</span>` : '';
+  document.getElementById('crit-dmg-display').innerHTML  = `${totalCritDmg}%${critDmgBadge}`;
+  document.getElementById('crit-rate-display').innerHTML = `${totalCritRate}%${critRateBadge}`;
 
   // Weakness
   const a = document.getElementById('ammoWeak')?.checked ? 1 : 0;
@@ -627,11 +785,22 @@ function updateLive() {
 // ── Calculate Button ──────────────────────────────────────────────────────────
 
 function runCalculate() {
-  const { normalDmg, critDmgVal, avgDmg, steps } = calculate();
+  const { normalDmg, critDmgVal, avgDmg, fixedDmg, steps } = calculate();
 
   document.getElementById('result-normal').textContent = normalDmg.toLocaleString();
   document.getElementById('result-crit').textContent   = critDmgVal.toLocaleString();
   document.getElementById('result-avg').textContent    = avgDmg.toLocaleString();
+
+  const fixedRow = document.getElementById('fixed-dmg-row');
+  if (fixedDmg > 0) {
+    fixedRow.style.display = 'block';
+    document.getElementById('result-fixed').textContent       = `+${fixedDmg.toLocaleString()}`;
+    document.getElementById('result-total-normal').textContent = (normalDmg + fixedDmg).toLocaleString();
+    document.getElementById('result-total-crit').textContent   = (critDmgVal + fixedDmg).toLocaleString();
+    document.getElementById('result-total-avg').textContent    = (avgDmg    + fixedDmg).toLocaleString();
+  } else {
+    fixedRow.style.display = 'none';
+  }
 
   ['result-normal','result-crit','result-avg'].forEach(id => {
     const el = document.getElementById(id);
@@ -658,13 +827,13 @@ function initEventListeners() {
     'atk_remold_pct','battle_fixedkey_pct','battle_skill_pct',
     'def_base','def_buff_pct','def_weapon_trait','def_skill_debuff',
     'dmg_doll_passive','dmg_weapon_trait','dmg_attach_set','dmg_common_keys','dmg_fixed_keys','dmg_remolding',
-    'critdmg_extra','critrate','skillmod',
+    'critdmg_extra','critrate',
   ];
   numInputIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updateLive);
   });
-  ['isCrit','ammoWeak','phaseWeak'].forEach(id => {
+  ['ammoWeak','phaseWeak'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', updateLive);
   });
@@ -679,6 +848,8 @@ function init() {
   renderPlatoonAtk();
   renderPlatoonDmg();
   populateDollSelector();
+  document.getElementById('vertebrae-select').value = 'v0';
+  activeVertebrae = 'v0';
   onDollChange();         // also calls renderDollMechanics
   initEventListeners();
   updateLive();

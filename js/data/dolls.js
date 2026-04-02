@@ -81,7 +81,7 @@ const DOLLS = [
 
       // s1 v0-v3
       {
-        id: 'leva_s1_lv1',
+        id: '(S1) leva_s1_lv1',
         name: 'Rational Suppression',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -95,7 +95,7 @@ const DOLLS = [
 
       // s1 v4-v6
       {
-        id: 'leva_s1_lv2',
+        id: '(S1) leva_s1_lv2',
         name: 'Rational Suppression',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -110,7 +110,7 @@ const DOLLS = [
 
       // s2 v0-v1
       {
-        id: 'leva_s2_lv1',
+        id: '(S2) leva_s2_lv1',
         name: 'Ordered Disruption',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -125,7 +125,7 @@ const DOLLS = [
 
       // s2 v2-v6
       {
-        id: 'leva_s2_lv2',
+        id: '(S2) leva_s2_lv2',
         name: 'Ordered Disruption',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -140,7 +140,7 @@ const DOLLS = [
 
       // ult v0-v2
       {
-        id: 'leva_ult_lv1',
+        id: '(Ult) leva_ult_lv1',
         name: 'Quantum Calculation',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -154,7 +154,7 @@ const DOLLS = [
 
       // ult v3-v4
       {
-        id: 'leva_ult_lv2',
+        id: '(Ult) leva_ult_lv2',
         name: 'Quantum Calculation',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -168,7 +168,7 @@ const DOLLS = [
 
       // ult v5-v6
       {
-        id: 'leva_ult_lv3',
+        id: '(Ult) leva_ult_lv3',
         name: 'Quantum Calculation',
         dmg_type: 'Electric',
         skill_type: 'aoe',
@@ -263,6 +263,38 @@ const DOLLS = [
         scalingStat: 'ATK',
         notes: 'Stability damage: 1 / 2 / 4 / 8 points for 1–4 stacks respectively.',
       },
+
+      // overclocking strike lv1
+      {
+        id: 'leva_sb_lv1',
+        name: 'Overclocking Strike',
+        dmg_type: 'Electric',
+        skill_type: 'melee',
+        description: 'When the target\'s stability is at 0, excess stability damage is converted into Electric damage, dealing additional Electric damage to the target equal to (overflow stability damage amount) x 5% of attack (This will not trigger Negative Charge). Considered a buff, cannot be cleansed.',
+        multiplier: null,
+        scalingType: 'stability_overflow',
+        overflowRate: 5,  // effective mult = overflow_stab × 5% (user inputs overflow)
+        vertebrae: ['v0', 'v1', 'v2', 'v3', 'v4'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      // overclocking strike lv2
+      {
+        id: 'leva_sb_lv2',
+        name: 'Overclocking Strike',
+        dmg_type: 'Electric',
+        skill_type: 'melee',
+        description: 'When the target\'s stability is at 0, excess stability damage is converted into Electric damage, dealing additional Electric damage to the target equal to (overflow stability damage amount) x 8% of attack (This will not trigger Negative Charge). Considered a buff, cannot be cleansed.',
+        multiplier: null,
+        scalingType: 'stability_overflow',
+        overflowRate: 8,  // effective mult = overflow_stab × 8% (user inputs overflow)
+        vertebrae: ['v5', 'v6'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
     ],
 
     passives: [
@@ -279,13 +311,31 @@ const DOLLS = [
         key: 'sc_stacks',
         label: 'Superconductive Code Stacks',
         max: 4,
-        // Per-stack: +5% crit rate, +7% crit DMG. At 4 stacks: +15% ATK, +10% ATK (chain)
         effect: (stacks) => ({
           critRate: stacks * 5,
           critDmg:  stacks * 7,
-          atkPct:   stacks >= 4 ? 25 : 0,  // +15% passive + +10% chain at max stacks
         }),
-        notes: '+5% Crit Rate and +7% Crit DMG per stack. At 4 stacks: +15% ATK (passive) and +10% ATK (Superconductive Chain) activate.',
+        notes: '+5% Crit Rate and +7% Crit DMG per stack.',
+      },
+
+      // ── SC Code: first time reaching 4 stacks — once per battle passive ──
+      {
+        type: 'toggle',
+        key: 'sc_passive_atk',
+        label: 'SC Code — +15% ATK (first 4-stack, passive)',
+        condition: 'First time reaching 4 Superconductive Code stacks this battle',
+        effect: { atkPct: 15 },
+        notes: 'Once per battle. Stays active after triggering — turn off between battles.',
+      },
+
+      // ── Superconductive Chain: +10% ATK when 4 stacks consumed ───────────
+      {
+        type: 'toggle',
+        key: 'sc_chain_atk',
+        label: 'SC Code — +10% ATK (Superconductive Chain)',
+        condition: '4 stacks consumed for Superconductive Strike',
+        effect: { atkPct: 10 },
+        notes: '+10% ATK from the Superconductive Chain bonus at max stacks.',
       },
 
       // ── S1 Crit DMG bonus (per-attack) ───────────────────────────────────
@@ -295,7 +345,8 @@ const DOLLS = [
         label: 'S1 — +25% Crit DMG (this attack)',
         condition: 'Using Rational Suppression (S1)',
         effect: { critDmg: 25 },
-        notes: 'Only applies to the S1 attack. Toggle on when calculating S1 damage.',
+        vertebrae: ['v4', 'v5', 'v6'],
+        notes: 'Only applies to the S1 attack at V4+. Toggle on when calculating S1 damage.',
       },
 
       // ── Negative Charge on target ─────────────────────────────────────────
@@ -318,31 +369,33 @@ const DOLLS = [
       },
 
       // ── Voltage Tiles ─────────────────────────────────────────────────────
+      // Voltage Tile reactions deal fixed damage = ATK × %, bypassing DEF.
+      // Select the appropriate % based on attack type, then optionally ×2 for large/boss.
       {
         type: 'toggle',
         key: 'voltage_tile_dmg',
-        label: 'Voltage Tiles — +30% DMG (AoE)',
-        condition: 'Attack on or near Voltage Tiles (AoE)',
-        effect: { dmgPct: 30 },
-        notes: 'AoE attacks on Voltage tiles deal +30% DMG.',
+        label: 'Voltage Tiles — 30% ATK fixed (non-elec AoE)',
+        condition: 'AoE attack on/near Voltage Tiles, non-electric',
+        effect: { fixedAtkPct: 30 },
+        notes: 'Fixed damage = 30% of Final ATK, added after main calc, ignores DEF. Use 60% toggle instead for electric/hydro.',
       },
 
       {
         type: 'toggle',
         key: 'voltage_tile_elec',
-        label: 'Voltage Tiles — +60% DMG (Electric/Hydro AoE)',
+        label: 'Voltage Tiles — 60% ATK fixed (Electric/Hydro AoE)',
         condition: 'AoE attack is Electric or Hydro type',
-        effect: { dmgPct: 60 },
-        notes: 'Replaces the base +30% — select this instead when skill is Electric/Hydro. Do not stack both.',
+        effect: { fixedAtkPct: 60 },
+        notes: 'Fixed damage = 60% of Final ATK, added after main calc, ignores DEF. Replaces +30% — do not enable both.',
       },
 
       {
         type: 'toggle',
         key: 'voltage_tile_boss',
-        label: 'Voltage Tiles — ×2 vs Large/Boss target',
+        label: 'Voltage Tiles — ×2 fixed DMG (Large/Boss target)',
         condition: 'Target is a large enemy or boss',
-        effect: { dmgMultiplier: 2 },
-        notes: 'Doubles the Voltage Tile bonus DMG against large/boss targets.',
+        effect: { fixedAtkMultiplier: 2 },
+        notes: 'Doubles the Voltage Tile fixed damage. Stack with the 30% or 60% toggle above.',
       },
 
       // ── S2 Neg Charge bonus ───────────────────────────────────────────────
@@ -369,6 +422,207 @@ const DOLLS = [
 
     notes: 'Electric Sentinel. Core mechanics: Superconductive Code stacks (0–4), Voltage Tiles, Negative Charge conditional bonuses.',
   },
+
+  {
+    id: 'klukai',
+    name: 'Klukai',
+    class: 'Sentinel',
+    ammoType: 'Medium',
+    phase: 'Corrosion',
+    baseCritDmg: 150,   // update with actual base value when confirmed
+
+        skills: [
+
+      {
+        id: 'klukai_basic',
+        name: 'Swift Strike',
+        dmg_type: 'Physical',
+        skill_type: 'target',
+        description: 'Selects one enemy target within 8 tiles and deals Physical damage equal to 80% of attack to it.',
+        multiplier: 0.80,
+        vertebrae: null,
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_s1_lv1',
+        name: '(S2) Pinpoint Detonation',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 enemy target within 8 tiles, dealing AoE Corrosion damage equal to 80% of attack. Performs an additional attack, dealing AoE Corrosion damage equal to 60% of attack to the target and all enemy targets within 3 tiles, pulling all affected enemy targets 1 tile towards the center.\nIf any enemy targets are killed, reduces the cooldown of the Ultimate skill Devastating Drift by 1 turn and gains 2 points of Confectance Index. If no enemy targets are killed, applies 1 stack of Corrosive Infusion to the target for 2 turns.',
+        multiplier: [
+          { label: 'Hit 1', value: 0.80 },
+          { label: 'Hit 2', value: 0.60 },
+        ],
+        multiHit: true,
+        vertebrae: ['v0', 'v1', 'v2', 'v3'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_s1_lv2',
+        name: '(S1) Pinpoint Detonation',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 enemy target within 8 tiles, dealing AoE Corrosion damage equal to 100% of attack. Performs an additional attack, dealing AoE Corrosion damage equal to 60% of attack to the target and all enemy targets within 3 tiles. For each stack of Corrosive Infusion the target has, the damage multiplier is increased by 5%, and all affected enemy targets are pulled 1 tile towards the center. If a phase weakness is exploited, the attack ignores 15% of Cover damage reduction.\nIf any enemy targets are killed, reduces the cooldown of the Ultimate skill Devastating Drift by 1 turn and gains 2 points of Confectance Index. If no enemy targets are killed, applies 1 stack of Corrosive Infusion to the target for 2 turns.',
+        multiplier: [
+          { label: 'Hit 1', value: 1.00 },
+          { label: 'Hit 2', value: 0.60 },
+        ],
+        multiHit: true,
+        vertebrae: ['v4', 'v5', 'v6'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_s2_lv1',
+        name: '(S2) Overpowering Corrosion',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 tile within 8 tiles, dealing AoE Corrosion damage equal to 90% of attack to all enemy targets within 3 tiles, and applies Toxic Infiltration for 2 turns. Increases damage by 15% to targets already affected by Toxic Infiltration.',
+        multiplier: 0.90,
+        vertebrae: ['v0'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_s2_lv2',
+        name: '(S2) Overpowering Corrosion',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 tile within 8 tiles, dealing AoE Corrosion damage equal to 90% of attack to all enemy targets within 3 tiles, and applies Toxic Infiltration for 2 turns. If the target survives, triggers the on-death effect of Toxic Infiltration. Increases damage dealt by 30% to targets already affected by Toxic Infiltration.',
+        multiplier: 0.90,
+        vertebrae: ['v1', 'v2', 'v3', 'v4'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_s2_lv3',
+        name: '(S2) Overpowering Corrosion',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 tile within 8 tiles, dealing AoE Corrosion damage equal to 110% of attack to all enemy targets within 5 tiles, and applies Toxic Infiltration for 2 turns. If the target survives, triggers the on-death effect of Toxic Infiltration. If the target is inflicted with a Corrosion debuff, applies Toxic Infiltration for 2 turns before the attack. Increases damage by 30% to targets already affected by Toxic Infiltration.',
+        multiplier: 1.10,
+        vertebrae: ['v5', 'v6'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_ult_lv1',
+        name: '(Ult) Devastating Drift',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 tile within a cross-shaped area of 4 to 8 tiles, landing on the selected tile and dealing AoE Corrosion damage equal to 100% of attack to all enemy targets in a path 5 tiles wide. Gains 6 tiles of Additional Movement. If 2 or more targets are killed, this skill can be used again, up to a maximum of 1 additional time.',
+        multiplier: 1.00,
+        vertebrae: ['v0', 'v1', 'v2'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_ult_lv2',
+        name: '(Ult) Devastating Drift',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 tile within a cross-shaped area of 4 to 8 tiles, landing on the selected tile, applying Defense Down II and Toxic Infiltration for 2 turns, and dealing AoE Corrosion damage equal to 100% of attack to all enemy targets in a path 5 tiles wide. Gains 6 tiles of Additional Movement. For each enemy hit, increases damage dealt by an additional 10%, up to a maximum of 50%. If a Boss is hit, this increase will be immediately raised to the maximum value of 50%.\nIf 2 or more targets or a Boss is hit, this skill can be used again, up to a maximum of 1 additional time.',
+        multiplier: 1.00,
+        vertebrae: ['v3', 'v4', 'v5'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_ult_lv3',
+        name: '(Ult) Devastating Drift',
+        dmg_type: 'Corrosion',
+        skill_type: 'AoE',
+        description: 'Selects 1 tile within a cross-shaped area of 4 to 8 tiles, landing on the selected tile, applying Defense Down II and Toxic Infiltration for 2 turns, dealing AoE Corrosion damage that ignores Cover damage reduction equal to 100% of attack to all enemy targets in a path 7 tiles wide. Applies Dismay for 2 turns, and gains 6 tiles of Additional Movement. For each enemy hit, increases damage dealt by an additional 10%, up to a maximum of 50%. If a Boss is hit, this increase will be immediately raised to the maximum value of 50%.\nIf 2 or more targets or a Boss is hit, this skill can be used again, up to a maximum of 1 additional time.\nAfter the skill is used, triggers all enemies\' effects of Corrosive Infusion and the on-death effects of Toxic Infiltration.',
+        multiplier: 1.00,
+        vertebrae: ['v6'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_passive_lv1',
+        name: 'Elite\'s Pride',
+        dmg_type: null,
+        skill_type: null,
+        description: 'Immune to all negative Crowd Control tile effects. When dealing damage with active attacks, applies 1 stack of Corrosive Infusion to the target for 2 turns, and gains 1 stack of Competitive Spirit after skill usage.\nEach time Klukai performs an active attack or other allied units deal Corrosion damage, Klukai gains 1 point of Confectance Index. For every 3 points of Confectance Index gained, reduces the cooldown of her Ultimate skill by 1 turn.',
+        multiplier: null,
+        vertebrae: ['v0', 'v1'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_passive_lv2',
+        name: 'Elite\'s Pride',
+        dmg_type: null,
+        skill_type: null,
+        description: 'Immune to all negative Crowd Control tile effects.\nAt the start of the battle, gains 3 stacks of Competitive Spirit. When dealing damage with active attacks, applies 1 stack of Corrosive Infusion to the target for 2 turns.\nEach time Klukai performs an active attack or other allied units deal Corrosion damage, Klukai gains 1 stack of Competitive Spirit after skill usage and gains 1 point of Confectance Index.\nFor every 3 points of Confectance Index gained, applies an additional 1 stack of Corrosive Infusion to enemy units with Corrosive Infusion, and reduces the cooldown of her Ultimate skill by 2 turns.',
+        multiplier: null,
+        vertebrae: ['v2', 'v3', 'v4', 'v5'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_sa_lv1',
+        name: 'Corrosive Infusion',
+        dmg_type: 'Corrosion',
+        skill_type: 'aoe',
+        description: 'At the end of the action, the applier deals AoE Corrosion damage equal to 12% of attack. For each additional stack, the damage multiplier is increased by 12%. Upon being hit by active attacks from Klukai or Corrosion damage from other enemies, gain 1 additional stack and refresh the debuff duration, maximum of 10 stacks. Removed after the applier is killed. Considered a Corrosion debuff, cannot be cleansed.',
+        multiplier: null,
+        scalingType: 'stack_bonus',
+        stackLabel: 'Corrosive Infusion Stacks',
+        stackRate: 12,   // effective mult = stacks × 12%
+        stackMax: 10,
+        vertebrae: ['v0', 'v1'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'klukai_sa_lv2',
+        name: 'Corrosive Infusion',
+        dmg_type: 'Corrosion',
+        skill_type: 'aoe',
+        description: 'Reduce defense by 1%. At the end of the action, the applier deals AoE Corrosion damage equal to 12% of attack. For each additional stack, the damage multiplier is increased by 12%. Upon being hit by active attacks from Klukai or Corrosion damage from other enemies, gain 2 additional stacks and refresh the debuff duration, maximum of 15 stacks. Removed after the applier is killed. Considered a Corrosion debuff, cannot be cleansed.',
+        multiplier: null,
+        scalingType: 'stack_bonus',
+        stackLabel: 'Corrosive Infusion Stacks',
+        stackRate: 12,   // effective mult = stacks × 12%
+        stackMax: 15,
+        vertebrae: ['v2', 'v3', 'v4', 'v5', 'v6'],
+        cooldown: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+    ],
+
+    passives: [],
+    mechanics: [],
+    notes: '',
+   },
 
 ];
 
