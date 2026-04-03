@@ -57,15 +57,78 @@
   <!-- ── Gunsmoke Mode ── -->
   <div class="panel" style="margin-bottom:14px;">
     <div class="panel-label">Gunsmoke</div>
-    <div class="toggle-row" style="padding:0;">
-      <div class="toggle-info">
-        <strong>Gunsmoke Mode</strong>
-        <span>Enables Platoon ATK Boost and Platoon DMG Buff options</span>
+    <div class="section-header">Platoon Milestone Buffs</div>
+    <div id="gunsmoke-buff-list"></div>
+  </div>
+
+  <!-- ── Food Buff ── -->
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="corner-deco"></div>
+    <div class="panel-label">Food Buff</div>
+
+    <div class="section-header">Select Food</div>
+    <select id="food-select" class="profile-select" onchange="onFoodChange()"></select>
+
+    <div id="food-buff-display" style="display:none; margin-top:10px;">
+      <div id="food-desc" style="font-size:11px; color:var(--text-dim); font-style:italic; margin-bottom:8px; line-height:1.4;"></div>
+      <div class="stat-divider"></div>
+      <div class="stat-row" id="food-flat-row" style="display:none;">
+        <span class="stat-label">Flat ATK</span>
+        <div class="stat-input"><span id="food-flat-val" style="color:var(--atk-color); font-weight:600;">+0</span></div>
       </div>
-      <label class="toggle">
-        <input type="checkbox" id="gunsmokeMode" onchange="onGunsmokeToggle()">
-        <span class="toggle-track"></span>
-      </label>
+      <div class="stat-row" id="food-atk-pct-row" style="display:none;">
+        <span class="stat-label">ATK %</span>
+        <div class="stat-input"><span id="food-atk-pct-val" style="color:var(--atk-color); font-weight:600;">+0%</span></div>
+      </div>
+      <div class="stat-row" id="food-dmg-pct-row" style="display:none;">
+        <span class="stat-label">DMG %</span>
+        <div class="stat-input"><span id="food-dmg-pct-val" style="color:var(--dmg-color); font-weight:600;">+0%</span></div>
+      </div>
+      <div class="stat-row" id="food-crit-rate-row" style="display:none; border-bottom:none;">
+        <span class="stat-label">Crit Rate %</span>
+        <div class="stat-input"><span id="food-crit-rate-val" style="color:var(--crit); font-weight:600;">+0%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Common Keys ── -->
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="corner-deco"></div>
+    <div class="panel-label">Common Key</div>
+
+    <div class="section-header">Select Key</div>
+    <select id="ckey-select" class="profile-select" onchange="onCommonKeyChange()"></select>
+
+    <div id="ckey-display" style="display:none; margin-top:10px;">
+      <div class="stat-divider"></div>
+
+      <div class="stat-row" id="ckey-stats-row">
+        <span class="stat-label">Passive Stat</span>
+        <div class="stat-input">
+          <span id="ckey-stats-label" style="color:var(--atk-color); font-weight:600;"></span>
+        </div>
+      </div>
+
+      <div class="stat-row" style="border-bottom:none; align-items:flex-start;">
+        <span class="stat-label" style="padding-top:2px;">Effect</span>
+        <div class="stat-input" style="width:auto; flex:1;">
+          <span id="ckey-effect-text" style="font-size:11px; color:var(--text-dim); line-height:1.5;"></span>
+        </div>
+      </div>
+
+      <div id="ckey-effect-toggle-row" style="display:none; margin-top:6px;">
+        <div class="stat-divider"></div>
+        <div class="toggle-row" style="padding:6px 0 0;">
+          <div class="toggle-info">
+            <strong>Effect Active</strong>
+            <span id="ckey-effect-toggle-label"></span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="ckey-effect-active" onchange="onCommonKeyEffectToggle()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -114,7 +177,7 @@
     <div class="section-header">In-Battle Flat ATK Buffs</div>
     <div class="stat-row"><span class="stat-label">Max HP</span><div class="stat-input"><input type="number" id="doll_max_hp" value="0" min="0" oninput="updateLive()"><div class="suf">for Ichor calc</div></div></div>
     <div class="stat-row"><span class="stat-label">Ichor Flower</span><div class="stat-input" style="width:auto;display:flex;align-items:center;gap:0;flex-shrink:0;" id="ichor-select-wrap"></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Food Buff Flat ATK</span><div class="stat-input"><input type="number" id="food_buff_flat" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Food Flat ATK</span><div class="stat-input"><span id="food-flat-atk-display" style="color:var(--atk-color); font-weight:600; padding:0 8px;">0</span><div class="suf">from food selection</div></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row" style="background:rgba(255,107,107,0.05); border-radius:3px; padding:8px 6px; margin:0 -2px;">
       <span class="stat-total-label" style="color:var(--atk-color);">In-Battle Flat ATK Total</span>
@@ -126,16 +189,12 @@
     <div class="section-header">Battle ATK Buffs</div>
     <div id="atk-buff-list"></div>
     <div class="stat-divider" style="margin-top:8px;"></div>
-    <div class="gunsmoke-row" id="row-platoon-atk" style="display:none;">
-      <div id="platoon-atk-list"></div>
-      <div class="stat-divider" style="margin-top:8px;"></div>
-    </div>
     <div id="battle-atk-extra-list"></div>
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-row"><span class="stat-label">Remolding ATK %</span><div class="stat-input"><input type="number" id="atk_remold_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys ATK % Buff</span><div class="stat-input"><input type="number" id="battle_fixedkey_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Skill-based ATK % Buff</span><div class="stat-input"><input type="number" id="battle_skill_pct" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row"><span class="stat-label">Food ATK % Buff</span><div class="stat-input"><input type="number" id="food_atk_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Food ATK %</span><div class="stat-input"><span id="food-atk-pct-display" style="color:var(--atk-color); font-weight:600; padding:0 8px;">+0%</span><div class="suf">from food selection</div></div></div>
     <div class="stat-row" id="kit-atk-pct-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--crit);">Kit Mech ATK %</span><div class="stat-input"><input type="number" id="kit_atk_pct" value="0" min="0" readonly style="opacity:0.6;cursor:not-allowed;color:var(--crit);"><div class="suf">from kit</div></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row">
@@ -213,11 +272,6 @@
 
     <div class="section-header" style="color:var(--dmg-color);">DMG Toggles</div>
     <div id="dmg-toggle-list"></div>
-    <div class="gunsmoke-row" id="row-platoon-dmg" style="display:none;">
-      <div class="stat-divider" style="margin-top:8px;"></div>
-      <div id="platoon-dmg-list"></div>
-    </div>
-
     <div class="stat-divider" style="margin-top:10px;"></div>
     <div class="stat-row" id="kit-dmg-pct-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--crit);">Kit Mech DMG %</span><div class="stat-input"><input type="number" id="kit_dmg_pct" value="0" min="0" readonly style="opacity:0.6;cursor:not-allowed;color:var(--crit);"><div class="suf">from kit</div></div></div>
     <div class="stat-divider" style="margin-top:8px;"></div>
@@ -325,6 +379,9 @@
 </div>
 
 <!-- Scripts: data first, then logic, then UI -->
+<script src="js/data/gunsmoke.js"></script>
+<script src="js/data/food_buffs.js"></script>
+<script src="js/data/common_keys.js"></script>
 <script src="js/data/dolls.js"></script>
 <script src="js/calculator.js"></script>
 <script src="js/ui.js"></script>

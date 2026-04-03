@@ -161,80 +161,39 @@ function renderDefDebuffs() {
 
 // ── Gunsmoke Mode ─────────────────────────────────────────────────────────────
 
-let gunsmokeActive = false;
+window.gunsmokeBuffState = {};
+getGunsmokeBuffList().forEach(b => { window.gunsmokeBuffState[b.id] = false; });
 
-const PLATOON_ATK = [
-  { key:'p1_2', label:'1.2', val:15 },
-  { key:'p7_1', label:'7.1', val:25 },
-];
-let platoonAtkState = null;
-
-const PLATOON_DMG = [
-  { key:'p3_1', label:'3.1', val:30 },
-  { key:'p5_1', label:'5.1', val:30 },
-  { key:'p9_1', label:'9.1', val:40 },
-];
-let platoonDmgState = null;
-
-function getPlatoonAtkBonus() {
-  if (!gunsmokeActive || !platoonAtkState) return 0;
-  return PLATOON_ATK.find(o => o.key === platoonAtkState)?.val || 0;
-}
-
-function getPlatoonDmgBonus() {
-  if (!gunsmokeActive || !platoonDmgState) return 0;
-  return PLATOON_DMG.find(o => o.key === platoonDmgState)?.val || 0;
-}
-
-function onGunsmokeToggle() {
-  gunsmokeActive = document.getElementById('gunsmokeMode').checked;
-  document.getElementById('row-platoon-atk').style.display = gunsmokeActive ? 'block' : 'none';
-  document.getElementById('row-platoon-dmg').style.display = gunsmokeActive ? 'block' : 'none';
-  if (!gunsmokeActive) {
-    platoonAtkState = null;
-    platoonDmgState = null;
-    renderPlatoonAtk();
-    renderPlatoonDmg();
+function onGunsmokeBuffToggle(id) {
+  const buff  = getGunsmokeBuffById(id);
+  const wasOn = window.gunsmokeBuffState[id];
+  if (buff.group) {
+    getGunsmokeBuffList()
+      .filter(b => b.group === buff.group)
+      .forEach(b => { window.gunsmokeBuffState[b.id] = false; });
   }
+  window.gunsmokeBuffState[id] = !wasOn;
+  renderGunsmokeBuffs();
   updateLive();
 }
 
-function onPlatoonAtkSelect(key) {
-  platoonAtkState = platoonAtkState === key ? null : key;
-  renderPlatoonAtk();
-  updateLive();
-}
-
-function onPlatoonDmgSelect(key) {
-  platoonDmgState = platoonDmgState === key ? null : key;
-  renderPlatoonDmg();
-  updateLive();
-}
-
-function renderPlatoonAtk() {
-  const sel = platoonAtkState;
-  document.getElementById('platoon-atk-list').innerHTML = `
-    <table class="atk-buff-table">
-      <thead><tr><th>Platoon ATK Boost</th>${PLATOON_ATK.map(o=>`<th>${o.label}</th>`).join('')}</tr></thead>
+function renderGunsmokeBuffs() {
+  document.getElementById('gunsmoke-buff-list').innerHTML = `
+    <table class="atk-buff-table" style="width:100%;">
       <tbody>
-        <tr class="atk-buff-row ${sel?'active-I':''}">
-          <td class="atk-buff-name">Platoon ATK Boost${sel?`<span class="lv-badge lv1"> +${PLATOON_ATK.find(o=>o.key===sel)?.val}%</span>`:''}</td>
-          ${PLATOON_ATK.map(o=>`<td class="atk-buff-check"><input type="checkbox" class="atk-cb" ${sel===o.key?'checked':''} onchange="onPlatoonAtkSelect('${o.key}')"></td>`).join('')}
-        </tr>
-      </tbody>
-    </table>`;
-}
-
-function renderPlatoonDmg() {
-  const sel = platoonDmgState;
-  document.getElementById('platoon-dmg-list').innerHTML = `
-    <table class="atk-buff-table">
-      <thead><tr><th>Platoon DMG Buff</th>${PLATOON_DMG.map(o=>`<th>${o.label}</th>`).join('')}</tr></thead>
-      <tbody>
-        <tr class="atk-buff-row ${sel?'active-I':''}">
-          <td class="atk-buff-name">Platoon DMG Buff${sel?`<span class="lv-badge lv1 dmg-col"> +${PLATOON_DMG.find(o=>o.key===sel)?.val}%</span>`:''}</td>
-          ${PLATOON_DMG.map(o=>`<td class="atk-buff-check"><input type="checkbox" class="atk-cb dmg-cb" ${sel===o.key?'checked':''} onchange="onPlatoonDmgSelect('${o.key}')"></td>`).join('')}
-        </tr>
+        ${getGunsmokeBuffList().map(b => {
+          const on  = window.gunsmokeBuffState[b.id];
+          const badge = on && b.buff
+            ? b.buff.atkPct ? `<span class="lv-badge lv1 atk-col"> +${b.buff.atkPct}% ATK</span>`
+            : b.buff.dmgPct ? `<span class="lv-badge lv1 dmg-col"> +${b.buff.dmgPct}% DMG</span>`
+            : ''
+            : '';
+          return `
+            <tr class="atk-buff-row ${on ? 'active-I' : ''}">
+              <td class="atk-buff-name">${b.label}${badge}</td>
+              <td class="atk-buff-check" style="width:36px; min-width:36px; text-align:center;"><input type="checkbox" class="atk-cb" ${on ? 'checked' : ''} onchange="onGunsmokeBuffToggle('${b.id}')"></td>
+            </tr>`;
+        }).join('')}
       </tbody>
     </table>`;
 }
@@ -839,15 +798,94 @@ function initEventListeners() {
   });
 }
 
+// ── Common Keys ───────────────────────────────────────────────────────────────
+
+window.ckeyEffectActive = false;
+
+function populateCommonKeySelector() {
+  const sel = document.getElementById('ckey-select');
+  sel.innerHTML = `<option value="" disabled selected>— Select a key —</option>`
+    + getCommonKeyList().map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+}
+
+function onCommonKeyChange() {
+  const id  = document.getElementById('ckey-select').value;
+  const key = id ? getCommonKey(id) : null;
+
+  window.ckeyEffectActive = false;
+  document.getElementById('ckey-effect-active').checked = false;
+
+  document.getElementById('ckey-display').style.display = key ? '' : 'none';
+  if (!key) { updateLive(); return; }
+
+  document.getElementById('ckey-stats-label').textContent = key.statsLabel || '';
+
+  document.getElementById('ckey-effect-text').textContent = key.effect || '';
+
+  const hasEffectBuff = key.effectBuff && Object.keys(key.effectBuff).length > 0;
+  document.getElementById('ckey-effect-toggle-row').style.display = hasEffectBuff ? '' : 'none';
+  document.getElementById('ckey-effect-toggle-label').textContent = key.effect || '';
+
+  updateLive();
+}
+
+function onCommonKeyEffectToggle() {
+  window.ckeyEffectActive = document.getElementById('ckey-effect-active').checked;
+  updateLive();
+}
+
+// ── Food Buff ─────────────────────────────────────────────────────────────────
+
+function populateFoodSelector() {
+  const sel = document.getElementById('food-select');
+  sel.innerHTML = `<option value="" disabled selected>— Select a food —</option>`
+    + getFoodList().map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+}
+
+function onFoodChange() {
+  const id   = document.getElementById('food-select').value;
+  const food = getFood(id);
+  const buff = food.buff || {};
+
+  const hasFlat     = !!buff.flatAtk;
+  const hasAtkPct   = !!buff.atkPct;
+  const hasDmgPct   = !!buff.dmgPct;
+  const hasCritRate = !!buff.critRate;
+  const hasBuff     = hasFlat || hasAtkPct || hasDmgPct || hasCritRate || !!food.description;
+
+  document.getElementById('food-buff-display').style.display = hasBuff ? '' : 'none';
+
+  const descEl = document.getElementById('food-desc');
+  descEl.textContent   = food.description || '';
+  descEl.style.display = food.description ? '' : 'none';
+
+  document.getElementById('food-flat-row').style.display     = hasFlat     ? '' : 'none';
+  document.getElementById('food-atk-pct-row').style.display  = hasAtkPct   ? '' : 'none';
+  document.getElementById('food-dmg-pct-row').style.display  = hasDmgPct   ? '' : 'none';
+  document.getElementById('food-crit-rate-row').style.display = hasCritRate ? '' : 'none';
+
+  if (hasFlat)     document.getElementById('food-flat-val').textContent      = `+${buff.flatAtk}`;
+  if (hasAtkPct)   document.getElementById('food-atk-pct-val').textContent   = `+${buff.atkPct}%`;
+  if (hasDmgPct)   document.getElementById('food-dmg-pct-val').textContent   = `+${buff.dmgPct}%`;
+  if (hasCritRate) document.getElementById('food-crit-rate-val').textContent = `+${buff.critRate}%`;
+
+  // Mirror active food values into the ATK panel display rows
+  document.getElementById('food-flat-atk-display').textContent = hasFlat   ? `+${buff.flatAtk}` : '0';
+  document.getElementById('food-atk-pct-display').textContent  = hasAtkPct ? `+${buff.atkPct}%` : '+0%';
+
+  updateLive();
+}
+
 function init() {
   renderAtkBuffs();
   renderIchorSelector();
   renderDefDebuffs();
   renderDmgToggles();
   renderCritToggles();
-  renderPlatoonAtk();
-  renderPlatoonDmg();
+  renderGunsmokeBuffs();
   populateDollSelector();
+  populateCommonKeySelector();
+  populateFoodSelector();
   document.getElementById('vertebrae-select').value = 'v0';
   activeVertebrae = 'v0';
   onDollChange();         // also calls renderDollMechanics

@@ -42,9 +42,28 @@ function getIchorFlatATK() {
   return maxHp * pct;
 }
 
+// Gunsmoke — sums all active milestone buff toggles
+function getGunsmokeResult() {
+  const out = { atkPct: 0, dmgPct: 0 };
+  if (!window.gunsmokeBuffState) return out;
+  for (const b of getGunsmokeBuffList()) {
+    if (!window.gunsmokeBuffState[b.id] || !b.buff) continue;
+    out.atkPct += b.buff.atkPct || 0;
+    out.dmgPct += b.buff.dmgPct || 0;
+  }
+  return out;
+}
+
+// Active food buff — reads current food-select dropdown, returns buff object
+function getActiveFoodBuff() {
+  const id = document.getElementById('food-select')?.value;
+  if (!id) return {};
+  return getFood(id)?.buff || {};
+}
+
 // In-Battle Flat ATK Total: baseAtkTotal + ichor + food flat
 function getBattleFlatTotal() {
-  return getBaseAtkTotal() + getIchorFlatATK() + readNum('food_buff_flat');
+  return getBaseAtkTotal() + getIchorFlatATK() + (getActiveFoodBuff().flatAtk || 0);
 }
 
 // In-Battle Flat ATK Total ceiled — base for battle % calculations
@@ -68,8 +87,8 @@ function getBattleAtkPct() {
   pct += readNum('atk_remold_pct');
   pct += readNum('battle_fixedkey_pct');
   pct += readNum('battle_skill_pct');
-  pct += readNum('food_atk_pct');
-  pct += getPlatoonAtkBonus();
+  pct += getActiveFoodBuff().atkPct || 0;
+  pct += getGunsmokeResult().atkPct;
   pct += getDollMechanicsResult().atkPct;
   return pct;
 }
@@ -110,8 +129,9 @@ function getDmgMult() {
     if (!state) continue;
     sum += state === 'I' ? b.valI : b.valII;
   }
-  sum += getPlatoonDmgBonus();
+  sum += getGunsmokeResult().dmgPct;
   sum += getDollMechanicsResult().dmgPct;
+  sum += getActiveFoodBuff().dmgPct || 0;
   return 1 + sum / 100;
 }
 
@@ -130,7 +150,7 @@ function getEffectiveCritStats() {
   }
   return {
     critDmg:  Math.min(baseDmg  + dmgBonus,  9999),
-    critRate: Math.min(readNum('critrate', 0) + rateBonus, 100),
+    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0), 100),
   };
 }
 
