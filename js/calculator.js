@@ -24,13 +24,13 @@ function getFlatATKWhole() {
 }
 
 function getAtkPctSources() {
-  const ids = ['atk_wpn_pct','atk_attach_pct','atk_helix_node_pct','atk_helix_extra_pct','atk_keys_pct','atk_covenant_pct','atk_fixedkey_pct'];
+  const ids = ['atk_wpn_pct','atk_attach_pct','atk_helix_node_pct','atk_helix_extra_pct','atk_covenant_pct','atk_fixedkey_pct'];
   return ids.reduce((sum, id) => sum + readNum(id), 0);
 }
 
 // Base ATK Total: ceil(flatATK) × (1 + pct%) — decimal for display
 function getBaseAtkTotal() {
-  return getFlatATKWhole() * (1 + getAtkPctSources() / 100);
+  return getFlatATKWhole() * (1 + (getAtkPctSources() + getCommonKeyAtkPct()) / 100);
 }
 
 // Ichor Flower flat ATK = selected level (0–5, 0.2/0.4/0.6/0.8/1.0%) × max HP
@@ -50,6 +50,47 @@ function getGunsmokeResult() {
     if (!window.gunsmokeBuffState[b.id] || !b.buff) continue;
     out.atkPct += b.buff.atkPct || 0;
     out.dmgPct += b.buff.dmgPct || 0;
+  }
+  return out;
+}
+
+// Common key — sums a given stat type across all 3 key columns, all 3 slots each
+function getCommonKeyStat(statKey) {
+  let total = 0;
+  for (const i of [0, 1, 2]) {
+    const sel = document.getElementById(`ckey-col-${i}`)?.querySelector('.ckey-col-select');
+    const id  = sel?.value;
+    if (!id) continue;
+    const key = getCommonKey(id);
+    if (!key) continue;
+    if (key.defaultStat === statKey)
+      total += parseFloat(document.getElementById(`ckey-${i}-s1-val`)?.value) || 0;
+    for (const s of [2, 3]) {
+      const type = document.getElementById(`ckey-${i}-s${s}-type`)?.value;
+      if (type === statKey)
+        total += parseFloat(document.getElementById(`ckey-${i}-s${s}-val`)?.value) || 0;
+    }
+  }
+  return total;
+}
+
+function getCommonKeyAtkPct()  { return getCommonKeyStat('atkPct');   }
+function getCommonKeyCritRate() { return getCommonKeyStat('critRate'); }
+function getCommonKeyCritDmg()  { return getCommonKeyStat('critDmg');  }
+
+// Active common key effects — sums effectBuff values for toggled-on key effects
+function getCommonKeyEffectResult() {
+  const out = { atkPct: 0, dmgPct: 0, critRate: 0, critDmg: 0 };
+  if (!window.ckeyEffectActive) return out;
+  for (const i of [0, 1, 2]) {
+    if (!window.ckeyEffectActive[i]) continue;
+    const sel = document.getElementById(`ckey-col-${i}`)?.querySelector('.ckey-col-select');
+    const key = sel?.value ? getCommonKey(sel.value) : null;
+    if (!key?.effectBuff) continue;
+    out.atkPct   += key.effectBuff.atkPct   || 0;
+    out.dmgPct   += key.effectBuff.dmgPct   || 0;
+    out.critRate += key.effectBuff.critRate  || 0;
+    out.critDmg  += key.effectBuff.critDmg  || 0;
   }
   return out;
 }
@@ -90,6 +131,7 @@ function getBattleAtkPct() {
   pct += getActiveFoodBuff().atkPct || 0;
   pct += getGunsmokeResult().atkPct;
   pct += getDollMechanicsResult().atkPct;
+  pct += getCommonKeyEffectResult().atkPct;
   return pct;
 }
 
@@ -132,6 +174,7 @@ function getDmgMult() {
   sum += getGunsmokeResult().dmgPct;
   sum += getDollMechanicsResult().dmgPct;
   sum += getActiveFoodBuff().dmgPct || 0;
+  sum += getCommonKeyEffectResult().dmgPct;
   return 1 + sum / 100;
 }
 
@@ -149,8 +192,8 @@ function getEffectiveCritStats() {
     if (b.key === 'crit_rate_up') rateBonus += val;
   }
   return {
-    critDmg:  Math.min(baseDmg  + dmgBonus,  9999),
-    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0), 100),
+    critDmg:  Math.min(baseDmg  + dmgBonus  + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg,  9999),
+    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate, 100),
   };
 }
 

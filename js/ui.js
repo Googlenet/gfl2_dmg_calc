@@ -662,9 +662,13 @@ function updateLive() {
   const atkFinal       = getAtkFinal();
   const atkFinalWhole  = Math.ceil(atkFinal);
 
+  const ckeyAtkPct = getCommonKeyAtkPct();
+  const el = document.getElementById('ckey-atk-pct-display');
+  if (el) el.textContent = ckeyAtkPct > 0 ? `+${ckeyAtkPct}%` : '+0%';
+
   document.getElementById('total-flat-atk').textContent = `${fmt(totalFlat)} (${flatWhole.toLocaleString()})`;
-  document.getElementById('total-atk-pct').childNodes[0].textContent = `+${totalPct}% `;
-  document.getElementById('total-atk-pct-abs').textContent = `(+${fmt(flatWhole * totalPct / 100)})`;
+  document.getElementById('total-atk-pct').childNodes[0].textContent = `+${totalPct + ckeyAtkPct}% `;
+  document.getElementById('total-atk-pct-abs').textContent = `(+${fmt(flatWhole * (totalPct + ckeyAtkPct) / 100)})`;
   document.getElementById('base-atk-total').textContent = fmt(baseAtkTotal);
   document.getElementById('atk-ichor-total').textContent = `${fmt(battleFlatTotal)} (${battleFlatWhole.toLocaleString()})`;
   document.getElementById('total-battle-pct').childNodes[0].textContent = `+${battlePct}% `;
@@ -731,6 +735,15 @@ function updateLive() {
   const critRateBadge = mech.critRate > 0 ? ` <span style="${critStyle}">+${mech.critRate}% kit</span>` : '';
   document.getElementById('crit-dmg-display').innerHTML  = `${totalCritDmg}%${critDmgBadge}`;
   document.getElementById('crit-rate-display').innerHTML = `${totalCritRate}%${critRateBadge}`;
+
+  const ckeyCritDmg  = getCommonKeyCritDmg();
+  const ckeyCritRate = getCommonKeyCritRate();
+  const ckeyCritDmgRow  = document.getElementById('ckey-crit-dmg-row');
+  const ckeyCritRateRow = document.getElementById('ckey-crit-rate-row');
+  ckeyCritDmgRow.style.display  = ckeyCritDmg  > 0 ? '' : 'none';
+  ckeyCritRateRow.style.display = ckeyCritRate > 0 ? '' : 'none';
+  if (ckeyCritDmg  > 0) document.getElementById('ckey-crit-dmg-display').textContent  = `+${ckeyCritDmg}%`;
+  if (ckeyCritRate > 0) document.getElementById('ckey-crit-rate-display').textContent = `+${ckeyCritRate}%`;
 
   // Weakness
   const a = document.getElementById('ammoWeak')?.checked ? 1 : 0;
@@ -800,37 +813,103 @@ function initEventListeners() {
 
 // ── Common Keys ───────────────────────────────────────────────────────────────
 
-window.ckeyEffectActive = false;
+const CKEY_STAT_OPTIONS = [
+  { value: '',         label: '— None —'      },
+  { value: 'atkPct',   label: 'Attack Boost'  },
+  { value: 'critRate', label: 'Crit Rate'     },
+  { value: 'critDmg',  label: 'Crit DMG'      },
+  { value: 'defPct',   label: 'DEF Boost'     },
+  { value: 'hpPct',    label: 'HP Boost'      },
+];
+
+// State: array of 3 effect-active booleans, one per column
+window.ckeyEffectActive = [false, false, false];
 
 function populateCommonKeySelector() {
-  const sel = document.getElementById('ckey-select');
-  sel.innerHTML = `<option value="" disabled selected>— Select a key —</option>`
-    + getCommonKeyList().map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+  [0, 1, 2].forEach(i => {
+    document.getElementById(`ckey-col-${i}`).innerHTML = renderCkeyColumn(i, null);
+  });
 }
 
-function onCommonKeyChange() {
-  const id  = document.getElementById('ckey-select').value;
+function renderCkeyColumn(i, key) {
+  const slotOptHtml = CKEY_STAT_OPTIONS.map(o =>
+    `<option value="${o.value}">${o.label}</option>`
+  ).join('');
+
+  const keyOptHtml = `<option value="" disabled selected>— Select a key —</option>`
+    + getCommonKeyList().slice().sort((a, b) => a.name.localeCompare(b.name))
+        .map(k => `<option value="${k.id}">${k.name}</option>`).join('');
+
+  const slot1Label = key ? key.defaultStatLabel : '—';
+
+  return `
+    <div class="ckey-col">
+      <select class="ckey-col-select" onchange="onCommonKeyChange(${i}, this.value)">
+        ${keyOptHtml}
+      </select>
+
+      <div class="ckey-slot">
+        <div class="ckey-slot-label is-default">${slot1Label}</div>
+        <input class="ckey-slot-input" type="number" id="ckey-${i}-s1-val"
+               value="0" min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
+      </div>
+
+      <div class="ckey-slot">
+        <select class="ckey-slot-type" id="ckey-${i}-s2-type"
+                onchange="updateLive()" ${!key ? 'disabled' : ''}>${slotOptHtml}</select>
+        <input class="ckey-slot-input" type="number" id="ckey-${i}-s2-val"
+               value="0" min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
+      </div>
+
+      <div class="ckey-slot">
+        <select class="ckey-slot-type" id="ckey-${i}-s3-type"
+                onchange="updateLive()" ${!key ? 'disabled' : ''}>${slotOptHtml}</select>
+        <input class="ckey-slot-input" type="number" id="ckey-${i}-s3-val"
+               value="0" min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
+      </div>
+    </div>`;
+}
+
+function onCommonKeyChange(i, id) {
   const key = id ? getCommonKey(id) : null;
+  window.ckeyEffectActive[i] = false;
 
-  window.ckeyEffectActive = false;
-  document.getElementById('ckey-effect-active').checked = false;
+  document.getElementById(`ckey-col-${i}`).innerHTML = renderCkeyColumn(i, key);
+  // Restore the selected value in the dropdown after re-render
+  const sel = document.getElementById(`ckey-col-${i}`).querySelector('.ckey-col-select');
+  if (sel && id) sel.value = id;
 
-  document.getElementById('ckey-display').style.display = key ? '' : 'none';
-  if (!key) { updateLive(); return; }
-
-  document.getElementById('ckey-stats-label').textContent = key.statsLabel || '';
-
-  document.getElementById('ckey-effect-text').textContent = key.effect || '';
-
-  const hasEffectBuff = key.effectBuff && Object.keys(key.effectBuff).length > 0;
-  document.getElementById('ckey-effect-toggle-row').style.display = hasEffectBuff ? '' : 'none';
-  document.getElementById('ckey-effect-toggle-label').textContent = key.effect || '';
-
+  renderCkeyEffects();
   updateLive();
 }
 
-function onCommonKeyEffectToggle() {
-  window.ckeyEffectActive = document.getElementById('ckey-effect-active').checked;
+function renderCkeyEffects() {
+  const rows = [0, 1, 2].map(i => {
+    const sel = document.getElementById(`ckey-col-${i}`)?.querySelector('.ckey-col-select');
+    const id  = sel?.value;
+    const key = id ? getCommonKey(id) : null;
+    if (!key || !key.effectBuff) return '';
+    const on = window.ckeyEffectActive[i];
+    return `
+      <div class="toggle-row" style="padding:4px 0;">
+        <div class="toggle-info">
+          <strong style="font-size:11px;">Key ${i + 1} Effect</strong>
+          <span>${key.effect}</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${on ? 'checked' : ''} onchange="onCkeyEffectToggle(${i}, this.checked)">
+          <span class="toggle-track"></span>
+        </label>
+      </div>`;
+  }).join('');
+
+  const el = document.getElementById('ckey-effects-list');
+  el.innerHTML = rows;
+  el.style.display = rows.trim() ? '' : 'none';
+}
+
+function onCkeyEffectToggle(i, checked) {
+  window.ckeyEffectActive[i] = checked;
   updateLive();
 }
 
@@ -839,7 +918,8 @@ function onCommonKeyEffectToggle() {
 function populateFoodSelector() {
   const sel = document.getElementById('food-select');
   sel.innerHTML = `<option value="" disabled selected>— Select a food —</option>`
-    + getFoodList().map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+    + getFoodList().slice().sort((a, b) => a.name.localeCompare(b.name))
+        .map(f => `<option value="${f.id}">${f.name}</option>`).join('');
 }
 
 function onFoodChange() {

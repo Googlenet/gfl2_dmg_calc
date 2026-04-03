@@ -94,42 +94,15 @@
   <!-- ── Common Keys ── -->
   <div class="panel" style="margin-bottom:14px;">
     <div class="corner-deco"></div>
-    <div class="panel-label">Common Key</div>
+    <div class="panel-label">Common Keys</div>
 
-    <div class="section-header">Select Key</div>
-    <select id="ckey-select" class="profile-select" onchange="onCommonKeyChange()"></select>
-
-    <div id="ckey-display" style="display:none; margin-top:10px;">
-      <div class="stat-divider"></div>
-
-      <div class="stat-row" id="ckey-stats-row">
-        <span class="stat-label">Passive Stat</span>
-        <div class="stat-input">
-          <span id="ckey-stats-label" style="color:var(--atk-color); font-weight:600;"></span>
-        </div>
-      </div>
-
-      <div class="stat-row" style="border-bottom:none; align-items:flex-start;">
-        <span class="stat-label" style="padding-top:2px;">Effect</span>
-        <div class="stat-input" style="width:auto; flex:1;">
-          <span id="ckey-effect-text" style="font-size:11px; color:var(--text-dim); line-height:1.5;"></span>
-        </div>
-      </div>
-
-      <div id="ckey-effect-toggle-row" style="display:none; margin-top:6px;">
-        <div class="stat-divider"></div>
-        <div class="toggle-row" style="padding:6px 0 0;">
-          <div class="toggle-info">
-            <strong>Effect Active</strong>
-            <span id="ckey-effect-toggle-label"></span>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="ckey-effect-active" onchange="onCommonKeyEffectToggle()">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-      </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+      <div id="ckey-col-0"></div>
+      <div id="ckey-col-1"></div>
+      <div id="ckey-col-2"></div>
     </div>
+
+    <div id="ckey-effects-list" style="margin-top:8px;"></div>
   </div>
 
   <!-- ── Attack Stats ── -->
@@ -158,7 +131,7 @@
     <div class="stat-row"><span class="stat-label">Attachments ATK %</span><div class="stat-input"><input type="number" id="atk_attach_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Neural Helix Nodes ATK %</span><div class="stat-input"><input type="number" id="atk_helix_node_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Neural Helix Extra Adv. ATK %</span><div class="stat-input"><input type="number" id="atk_helix_extra_pct" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row"><span class="stat-label">Universal Keys ATK %</span><div class="stat-input"><input type="number" id="atk_keys_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Common Key ATK %</span><div class="stat-input"><span id="ckey-atk-pct-display" style="color:var(--atk-color); font-weight:600; padding:0 8px;">+0%</span><div class="suf">from common key</div></div></div>
     <div class="stat-row"><span class="stat-label">Covenant ATK %</span><div class="stat-input"><input type="number" id="atk_covenant_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Fixed Key ATK %</span><div class="stat-input"><input type="number" id="atk_fixedkey_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-divider"></div>
@@ -296,7 +269,15 @@
     <div class="section-header">Crit Toggles</div>
     <div id="crit-toggle-list"></div>
     <div class="stat-divider" style="margin-top:10px;"></div>
-    <div class="stat-total-row">
+    <div id="ckey-crit-dmg-row" class="stat-total-row" style="display:none; padding-top:2px;">
+      <span class="stat-total-label" style="font-size:9px;">Common Key Crit DMG</span>
+      <span class="stat-total-val" id="ckey-crit-dmg-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
+    </div>
+    <div id="ckey-crit-rate-row" class="stat-total-row" style="display:none; padding-top:2px;">
+      <span class="stat-total-label" style="font-size:9px;">Common Key Crit Rate</span>
+      <span class="stat-total-val" id="ckey-crit-rate-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
+    </div>
+    <div class="stat-total-row" style="padding-top:4px;">
       <span class="stat-total-label">Effective Crit DMG %</span>
       <span class="stat-total-val" id="crit-dmg-display" style="color:var(--crit);text-shadow:var(--glow-crit);">150%</span>
     </div>

@@ -169,6 +169,18 @@ input[type="number"]:focus { border-color: var(--accent); box-shadow: var(--glow
 .stat-total-sub { font-family: 'Share Tech Mono', monospace; font-size: 11px; font-weight: 400; color: var(--text-dim); text-shadow: none; margin-left: 4px; }
 .section-header { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--atk-color); opacity: 0.7; margin-bottom: 8px; margin-top: 4px; }
 
+/* Common Key columns */
+.ckey-col { background: var(--panel2); border: 1px solid var(--border); border-radius: 4px; padding: 8px; }
+.ckey-col-select { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 4px 2px 6px; outline: none; cursor: pointer; margin-bottom: 8px; }
+.ckey-col-select option { background: #0d1520; }
+.ckey-slot { margin-bottom: 6px; }
+.ckey-slot-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
+.ckey-slot-label.is-default { color: var(--atk-color); opacity: 0.9; }
+.ckey-slot-type { width: 100%; background: transparent; border: none; color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 0; outline: none; cursor: pointer; margin-bottom: 3px; }
+.ckey-slot-type option { background: #0d1520; }
+.ckey-slot-input { width: 100%; background: var(--panel-bg, #0d1520); border: 1px solid var(--border); border-radius: 3px; color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 4px 6px; text-align: right; outline: none; box-sizing: border-box; }
+.ckey-slot-input:focus { border-color: var(--accent); }
+
 /* Skill profile panel */
 .profile-select { width: 100%; background: var(--panel2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 13px; padding: 9px 12px; outline: none; cursor: pointer; transition: border-color 0.2s; }
 .profile-select:focus { border-color: var(--accent); }
