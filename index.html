@@ -105,6 +105,29 @@
     <div id="ckey-effects-list" style="margin-top:8px;"></div>
   </div>
 
+  <!-- ── Remolding Pattern (Flowers) ── -->
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="corner-deco"></div>
+    <div class="panel-label">Remolding Pattern</div>
+    <div id="flower-grid" class="flower-grid"></div>
+    <div id="flower-summary"></div>
+  </div>
+
+  <!-- ── Imagoform ── -->
+  <div id="imagoform-panel" class="panel" style="margin-bottom:14px;">
+    <div class="corner-deco"></div>
+    <div class="panel-label">Imagoform</div>
+    <div id="imagoform-content"></div>
+  </div>
+
+  <!-- ── Remolding Pattern Team Buffs ── -->
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="corner-deco"></div>
+    <div class="panel-label">Remolding Team Buffs</div>
+    <div id="team-buff-rows" class="team-buff-rows"></div>
+    <div id="team-buff-summary"></div>
+  </div>
+
   <!-- ── Attack Stats ── -->
   <div class="panel atk-panel" style="margin-bottom:14px;">
     <div class="corner-deco"></div>
@@ -165,6 +188,7 @@
     <div id="battle-atk-extra-list"></div>
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-row"><span class="stat-label">Remolding ATK %</span><div class="stat-input"><input type="number" id="atk_remold_pct" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" id="flower-atk-pct-row" style="display:none;"><span class="stat-label">Flower ATK %</span><div class="stat-input"><span id="flower-atk-pct-display" style="color:var(--atk-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from flowers</div></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys ATK % Buff</span><div class="stat-input"><input type="number" id="battle_fixedkey_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Skill-based ATK % Buff</span><div class="stat-input"><input type="number" id="battle_skill_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Food ATK %</span><div class="stat-input"><span id="food-atk-pct-display" style="color:var(--atk-color); font-weight:600; padding:0 8px;">+0%</span><div class="suf">from food selection</div></div></div>
@@ -215,7 +239,8 @@
     <div id="def-debuff-list"></div>
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-row"><span class="stat-label">Weapon Traits %</span><div class="stat-input"><input type="number" id="def_weapon_trait" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Skill-based DEF% Buff</span><div class="stat-input"><input type="number" id="def_skill_debuff" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Skill-based DEF% Buff</span><div class="stat-input"><input type="number" id="def_skill_debuff" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" id="passive-def-reduc-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--crit);">Doll Passive DEF %</span><div class="stat-input"><span id="passive-def-reduc-display" style="color:var(--crit);font-weight:600;padding:0 8px;">-0%</span><div class="suf">from passives</div></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row">
       <span class="stat-total-label">Total DEF Reduction</span>
@@ -224,7 +249,7 @@
     <div class="stat-divider" style="margin-top:12px; background: linear-gradient(90deg, var(--def-color), transparent); opacity:0.5;"></div>
     <div class="stat-total-row" style="padding-top:10px;">
       <span class="stat-total-label" style="font-size:11px; letter-spacing:2px; color:var(--def-color);">Final DEF</span>
-      <span class="stat-total-val" style="font-size:22px;color:var(--def-color);text-shadow:0 0 10px rgba(99,179,237,0.4);" id="def-final">8,000.00</span>
+      <span class="stat-total-val" style="font-size:22px;color:var(--def-color);text-shadow:0 0 10px rgba(99,179,237,0.4);" id="def-final">0.00</span>
     </div>
   </div>
 
@@ -239,7 +264,8 @@
     <div class="stat-row"><span class="stat-label">Attachment Set</span><div class="stat-input"><input type="number" id="dmg_attach_set" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Common Keys</span><div class="stat-input"><input type="number" id="dmg_common_keys" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys</span><div class="stat-input"><input type="number" id="dmg_fixed_keys" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" style="border-bottom:none;"><span class="stat-label">Remolding</span><div class="stat-input"><input type="number" id="dmg_remolding" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row"><span class="stat-label">Remolding</span><div class="stat-input"><input type="number" id="dmg_remolding" value="0" min="0" oninput="updateLive()"></div></div>
+    <div class="stat-row" id="flower-dmg-pct-row" style="display:none;border-bottom:none;"><span class="stat-label">Flower DMG %</span><div class="stat-input"><span id="flower-dmg-pct-display" style="color:var(--dmg-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from flowers</div></div></div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
 
@@ -276,6 +302,14 @@
     <div id="ckey-crit-rate-row" class="stat-total-row" style="display:none; padding-top:2px;">
       <span class="stat-total-label" style="font-size:9px;">Common Key Crit Rate</span>
       <span class="stat-total-val" id="ckey-crit-rate-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
+    </div>
+    <div id="flower-crit-dmg-row" class="stat-total-row" style="display:none; padding-top:2px;">
+      <span class="stat-total-label" style="font-size:9px;">Flower Crit DMG</span>
+      <span class="stat-total-val" id="flower-crit-dmg-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
+    </div>
+    <div id="flower-crit-rate-row" class="stat-total-row" style="display:none; padding-top:2px;">
+      <span class="stat-total-label" style="font-size:9px;">Flower Crit Rate</span>
+      <span class="stat-total-val" id="flower-crit-rate-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
     </div>
     <div class="stat-total-row" style="padding-top:4px;">
       <span class="stat-total-label">Effective Crit DMG %</span>
@@ -360,6 +394,7 @@
 </div>
 
 <!-- Scripts: data first, then logic, then UI -->
+<script src="js/data/remolding_pattern.js"></script>
 <script src="js/data/gunsmoke.js"></script>
 <script src="js/data/food_buffs.js"></script>
 <script src="js/data/common_keys.js"></script>

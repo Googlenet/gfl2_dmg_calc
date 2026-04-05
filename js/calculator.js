@@ -95,6 +95,61 @@ function getCommonKeyEffectResult() {
   return out;
 }
 
+// Flower + team buff result — maps stat ids to calc-relevant fields.
+// Conditional stats (element, aoe, target, boss) are only applied when the
+// active skill matches. Unconditional stats (atkPct, critDmg, critRate, dmgPct)
+// are always applied.
+function getFlowerResult() {
+  const out = { atkPct: 0, dmgPct: 0, critDmg: 0, critRate: 0 };
+  const phaseDmg  = activeSkill?.phase_dmg_type?.toLowerCase() || '';
+  const targetType = activeSkill?.target_type?.toLowerCase()   || '';
+  const skillType  = activeSkill?.skill_type?.toLowerCase()    || '';
+  const isAoe    = targetType === 'aoe';
+  const isTarget = targetType === 'targeted';
+  const isActive = skillType  === 'active';
+  const isOot    = skillType  === 'oot';
+
+  // Map from flower stat id → where it contributes
+  const apply = (id, val) => {
+    switch (id) {
+      case 'atkPct':        out.atkPct  += val; break;
+      case 'critDmg':       out.critDmg += val; break;
+      case 'critRate':      out.critRate += val; break;
+      case 'dmgPct':        out.dmgPct  += val; break;
+      // Elemental DMG% — only if skill phase matches
+      case 'corroDmgPct':   if (phaseDmg === 'corrosion') out.dmgPct += val; break;
+      case 'hydroDmgPct':   if (phaseDmg === 'hydro')     out.dmgPct += val; break;
+      case 'burnDmgPct':    if (phaseDmg === 'burn')      out.dmgPct += val; break;
+      case 'elecDmgPct':    if (phaseDmg === 'electric')  out.dmgPct += val; break;
+      case 'physDmgPct':    if (phaseDmg === 'physical')  out.dmgPct += val; break;
+      case 'freezeDmgPct':  if (phaseDmg === 'freeze')    out.dmgPct += val; break;
+      // Target-type conditional
+      case 'aoeDmgPct':     if (isAoe)    out.dmgPct  += val; break;
+      case 'targetDmgPct':  if (isTarget) out.dmgPct  += val; break;
+      case 'aoeCritDmg':    if (isAoe)    out.critDmg += val; break;
+      case 'targetCritDmg': if (isTarget) out.critDmg += val; break;
+      // Elemental crit DMG — vanguard sub2 smite bonuses
+      case 'corroCritDmg':  if (phaseDmg === 'corrosion') out.critDmg += val; break;
+      case 'hydroCritDmg':  if (phaseDmg === 'hydro')     out.critDmg += val; break;
+      case 'burnCritDmg':   if (phaseDmg === 'burn')      out.critDmg += val; break;
+      case 'elecCritDmg':   if (phaseDmg === 'electric')  out.critDmg += val; break;
+      case 'physCritDmg':   if (phaseDmg === 'physical')  out.critDmg += val; break;
+      case 'freezeCritDmg': if (phaseDmg === 'freeze')    out.critDmg += val; break;
+      // Skill-type conditional (active vs out-of-turn)
+      case 'activeDmgPct':  if (isActive) out.dmgPct  += val; break;
+      case 'ootDmgPct':     if (isOot)    out.dmgPct  += val; break;
+      case 'activeCritDmg': if (isActive) out.critDmg += val; break;
+      case 'ootCritDmg':    if (isOot)    out.critDmg += val; break;
+      // Not yet wired: bossDmgPct, hpPct, defPct, healPct, shieldPct, dmgReduc, flat stats
+    }
+  };
+
+  for (const [id, val] of Object.entries(window.flowerTotals  || {})) apply(id, val);
+  for (const [id, val] of Object.entries(window.teamBuffTotals || {})) apply(id, val);
+
+  return out;
+}
+
 // Active food buff — reads current food-select dropdown, returns buff object
 function getActiveFoodBuff() {
   const id = document.getElementById('food-select')?.value;
@@ -130,8 +185,9 @@ function getBattleAtkPct() {
   pct += readNum('battle_skill_pct');
   pct += getActiveFoodBuff().atkPct || 0;
   pct += getGunsmokeResult().atkPct;
-  pct += getDollMechanicsResult().atkPct;
+  pct += getDollPassivesResult().atkPct;
   pct += getCommonKeyEffectResult().atkPct;
+  pct += getFlowerResult().atkPct;
   return pct;
 }
 
@@ -151,6 +207,7 @@ function getTotalDefReduction() {
   }
   pct -= readNum('def_weapon_trait');
   pct -= readNum('def_skill_debuff');
+  pct -= getDollPassivesResult().defReducPct;
   return pct;
 }
 
@@ -172,9 +229,10 @@ function getDmgMult() {
     sum += state === 'I' ? b.valI : b.valII;
   }
   sum += getGunsmokeResult().dmgPct;
-  sum += getDollMechanicsResult().dmgPct;
+  sum += getDollPassivesResult().dmgPct;
   sum += getActiveFoodBuff().dmgPct || 0;
   sum += getCommonKeyEffectResult().dmgPct;
+  sum += getFlowerResult().dmgPct;
   return 1 + sum / 100;
 }
 
@@ -192,40 +250,79 @@ function getEffectiveCritStats() {
     if (b.key === 'crit_rate_up') rateBonus += val;
   }
   return {
-    critDmg:  Math.min(baseDmg  + dmgBonus  + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg,  9999),
-    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate, 100),
+    critDmg:  Math.min(baseDmg  + dmgBonus  + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg  + getFlowerResult().critDmg  + getDollPassivesResult().critDmg,  9999),
+    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate + getFlowerResult().critRate + getDollPassivesResult().critRate, 100),
   };
 }
 
-// ── Doll-Specific Mechanics ───────────────────────────────────────────────────
+// ── Doll-Specific Passives ────────────────────────────────────────────────────
 // dollMechState is defined and managed in ui.js
 
-function getDollMechanicsResult() {
-  const out = { atkPct: 0, dmgPct: 0, critDmg: 0, critRate: 0, fixedDmgPct: 0, fixedAtkPct: 0, dmgMultiplier: 1, fixedAtkMultiplier: 1 };
-  if (!window.dollMechState || !activeDoll?.mechanics) return out;
+function getDollPassivesResult() {
+  const out = { atkPct: 0, dmgPct: 0, critDmg: 0, critRate: 0, fixedDmgPct: 0, fixedAtkPct: 0, dmgMultiplier: 1, fixedAtkMultiplier: 1, defReducPct: 0 };
+  if (!window.dollMechState || !activeDoll?.passives) return out;
 
-  for (const mech of activeDoll.mechanics) {
-    if (mech.vertebrae && !mech.vertebrae.includes(activeVertebrae)) continue;
-    if (mech.type === 'stack_selector') {
-      const stacks = window.dollMechState[mech.key] || 0;
-      if (stacks > 0) {
-        const eff = mech.effect(stacks);
-        out.atkPct   += eff.atkPct   || 0;
-        out.dmgPct   += eff.dmgPct   || 0;
-        out.critDmg  += eff.critDmg  || 0;
-        out.critRate += eff.critRate  || 0;
-      }
-    } else if (mech.type === 'toggle') {
-      if (window.dollMechState[mech.key]) {
-        out.atkPct        += mech.effect.atkPct        || 0;
-        out.dmgPct        += mech.effect.dmgPct        || 0;
-        out.critDmg       += mech.effect.critDmg       || 0;
-        out.critRate      += mech.effect.critRate       || 0;
-        out.fixedDmgPct   += mech.effect.fixedDmgPct   || 0;
-        out.fixedAtkPct   += mech.effect.fixedAtkPct   || 0;
-        if (mech.effect.dmgMultiplier)      out.dmgMultiplier      *= mech.effect.dmgMultiplier;
-        if (mech.effect.fixedAtkMultiplier) out.fixedAtkMultiplier *= mech.effect.fixedAtkMultiplier;
-      }
+  const phaseDmg  = activeSkill?.phase_dmg_type?.toLowerCase() || '';
+  const targetType = activeSkill?.target_type?.toLowerCase()   || '';
+  const skillType  = activeSkill?.skill_type?.toLowerCase()    || '';
+  const isAoe    = targetType === 'aoe';
+  const isTarget = targetType === 'targeted';
+  const isActive = skillType  === 'active';
+  const isOot    = skillType  === 'oot';
+
+  // Collect all raw effect key/value pairs from active passives
+  const raw = {};
+  for (const p of activeDoll.passives) {
+    if (p.vertebrae && !p.vertebrae.includes(activeVertebrae)) continue;
+    let eff = {};
+    if (p.type === 'stack_selector') {
+      const stacks = window.dollMechState[p.key] || 0;
+      if (stacks > 0) eff = p.effect(stacks);
+    } else if (p.type === 'toggle') {
+      if (window.dollMechState[p.key]) eff = p.effect;
+    }
+    for (const [k, v] of Object.entries(eff)) {
+      raw[k] = (raw[k] || 0) + v;
+    }
+  }
+
+  // Apply conditional logic — same rules as getFlowerResult()
+  for (const [id, val] of Object.entries(raw)) {
+    switch (id) {
+      case 'atkPct':        out.atkPct      += val; break;
+      case 'dmgPct':        out.dmgPct      += val; break;
+      case 'critDmg':       out.critDmg     += val; break;
+      case 'critRate':      out.critRate    += val; break;
+      case 'fixedDmgPct':   out.fixedDmgPct += val; break;
+      case 'fixedAtkPct':   out.fixedAtkPct += val; break;
+      case 'dmgMultiplier':      out.dmgMultiplier      *= val; break;
+      case 'fixedAtkMultiplier': out.fixedAtkMultiplier *= val; break;
+      // Elemental DMG% — conditional on skill phase
+      case 'corroDmgPct':   if (phaseDmg === 'corrosion') out.dmgPct += val; break;
+      case 'elecDmgPct':    if (phaseDmg === 'electric')  out.dmgPct += val; break;
+      case 'burnDmgPct':    if (phaseDmg === 'burn')      out.dmgPct += val; break;
+      case 'hydroDmgPct':   if (phaseDmg === 'hydro')     out.dmgPct += val; break;
+      case 'physDmgPct':    if (phaseDmg === 'physical')  out.dmgPct += val; break;
+      case 'freezeDmgPct':  if (phaseDmg === 'freeze')    out.dmgPct += val; break;
+      // Elemental crit DMG — conditional on skill phase
+      case 'corroCritDmg':  if (phaseDmg === 'corrosion') out.critDmg += val; break;
+      case 'elecCritDmg':   if (phaseDmg === 'electric')  out.critDmg += val; break;
+      case 'burnCritDmg':   if (phaseDmg === 'burn')      out.critDmg += val; break;
+      case 'hydroCritDmg':  if (phaseDmg === 'hydro')     out.critDmg += val; break;
+      case 'physCritDmg':   if (phaseDmg === 'physical')  out.critDmg += val; break;
+      case 'freezeCritDmg': if (phaseDmg === 'freeze')    out.critDmg += val; break;
+      // Target-type conditional
+      case 'aoeDmgPct':     if (isAoe)    out.dmgPct  += val; break;
+      case 'targetDmgPct':  if (isTarget) out.dmgPct  += val; break;
+      case 'aoeCritDmg':    if (isAoe)    out.critDmg += val; break;
+      case 'targetCritDmg': if (isTarget) out.critDmg += val; break;
+      // Skill-type conditional (active vs out-of-turn)
+      case 'activeDmgPct':  if (isActive) out.dmgPct  += val; break;
+      case 'ootDmgPct':     if (isOot)    out.dmgPct  += val; break;
+      case 'activeCritDmg': if (isActive) out.critDmg += val; break;
+      case 'ootCritDmg':    if (isOot)    out.critDmg += val; break;
+      // DEF reduction
+      case 'defReducPct':   out.defReducPct += val; break;
     }
   }
   return out;
@@ -244,7 +341,7 @@ function getWeaknessMult() {
 // ── Main Calculate ────────────────────────────────────────────────────────────
 
 function calculate() {
-  const mech        = getDollMechanicsResult();
+  const mech        = getDollPassivesResult();
   const atkFinal    = getAtkFinal();
   const finalDef    = getFinalDef();
   const baseDmgMult = getDmgMult();

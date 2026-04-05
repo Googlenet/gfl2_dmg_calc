@@ -1,17 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // dolls.js  —  GFL2 Doll Database
 //
-// MECHANICS SCHEMA
-// ─────────────────
-// Each doll can have a `mechanics` array describing her unique in-battle
-// mechanics. The UI reads this and renders a doll-specific panel automatically.
+// PASSIVES SCHEMA
+// ────────────────
+// Each doll has a `passives` array covering all passive effects — stacks,
+// toggles, and always-on bonuses. These are distinct from skills, which have
+// an active multiplier. Anything that modifies stats without being a direct
+// attack goes here.
 //
-// Mechanic types:
+// Passive types:
 //
 //   { type: 'stack_selector',
 //     key:    string,          — unique key for state tracking
 //     label:  string,          — display name
-//     max:    number,          — maximum stacks (e.g. 4)
+//     max:    number,          — maximum stacks
 //     effect: (stacks) => ({   — function returning bonuses at given stack count
 //       atkPct?:    number,    — % added to battle ATK
 //       critDmg?:   number,    — flat % added to crit DMG
@@ -37,6 +39,21 @@
 //     notes?: string,
 //   }
 //
+// SKILL SCHEMA
+// ─────────────
+// Each skill entry has the following tag fields:
+//
+//   phase_dmg_type  — elemental/phase damage type: 'Electric', 'Corrosion',
+//                     'Physical', 'Burn', 'Hydro', 'Freeze', or null
+//   target_type     — attack shape: 'aoe', 'targeted', or null
+//   skill_type      — when it activates: 'active', 'oot' (out-of-turn), or null
+//   ammo_type       — ammo used: 'light', 'medium', 'heavy', 'melee',
+//                     'shotgun', or null (no ammo — specials, ults, passives)
+//   stability_dmg   — stability damage dealt (number, or null if passive/variable)
+//   confectance_cost — confectance index cost to activate (number, or null)
+//
+// These tags control which conditional buffs apply in the calculator.
+// stability_dmg and confectance_cost are cosmetic-only for now (shown on skill card).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DOLLS = [
@@ -50,8 +67,9 @@ const DOLLS = [
   //   phase: 'Burn',
   //   baseCritDmg: 150,    ← locked crit DMG pulled from this field on select
   //   skills: [ ... ],
-  //   passives: [],
+  //   passives: [ ... ],
   //   mechanics: [],
+  //   flowerSlots: [...],
   //   notes: '',
   // },
 
@@ -64,17 +82,21 @@ const DOLLS = [
     phase: 'Electric',
     baseCritDmg: 150,   // update with actual base value when confirmed
 
-        skills: [
+    skills: [
 
       {
         id: 'leva_basic',
         name: 'Dangerous Smile',
-        dmg_type: 'Physical',
-        skill_type: 'target',
+        phase_dmg_type: 'physical',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects one enemy target within 7 tiles and deals Physical damage equal to 80% of attack to it.',
         multiplier: 0.80,
         vertebrae: null,
         cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -83,12 +105,16 @@ const DOLLS = [
       {
         id: '(S1) leva_s1_lv1',
         name: 'Rational Suppression',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects one direction, dealing AoE Electric damage equal to 120% of attack to all enemies in a 7×3 tile area. Applies Negative Charge to all enemies in the area for 2 turns and generates Voltage tiles for 3 turns.',
         multiplier: 1.20,
         vertebrae: ['v0', 'v1', 'v2', 'v3'],
         cooldown: 1,
+        stability_dmg: 2,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -97,12 +123,16 @@ const DOLLS = [
       {
         id: '(S1) leva_s1_lv2',
         name: 'Rational Suppression',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Select one direction, dealing AoE Electric damage equal to 120% of attack to all enemy units in a 7×3 tile area of the selected direction, applies Negative Charge and Paralysis to all enemies in the selected area for 2 turns, and generates Voltage tiles for 3 turns. The critical damage for this skill is increased by 25%. ',
         multiplier: 1.20,
         vertebrae: ['v4', 'v5', 'v6'],
         cooldown: 1,
+        stability_dmg: 2,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
         notes: 'Add +25% to Crit DMG manually'
@@ -112,12 +142,16 @@ const DOLLS = [
       {
         id: '(S2) leva_s2_lv1',
         name: 'Ordered Disruption',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      'light',
         description: 'Selects one tile within 7 tiles, dealing AoE Electric damage equal to 100% of attack to all enemies within 3 tiles. Against targets with Negative Charge, damage dealt is increased by 30% and stability damage dealt is increased by 1 point.',
         multiplier: 1.00,
         vertebrae: ['v0','v1'],
         cooldown: 1,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
         notes: 'Add +30% to DMG Buffs manually if target has Negative Charge.',
@@ -127,12 +161,16 @@ const DOLLS = [
       {
         id: '(S2) leva_s2_lv2',
         name: 'Ordered Disruption',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      'light',
         description: 'Selects one tile within a 7 tiles, dealing AoE Electric damage equal to 130% of attack to all enemy targets within 3 tiles of the selected tile. Against targets with Negative Charge, damage dealt is increased by 30%, and stability damage dealt is increased by 1 point. At the end of the action, Leva gains 1 stack of Superconductive Code.',
         multiplier: 1.30,
         vertebrae: ['v2','v3', 'v4', 'v5', 'v6'],
         cooldown: 1,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
         notes: 'Add +30% to DMG Buffs manually if target has Negative Charge.',
@@ -142,12 +180,16 @@ const DOLLS = [
       {
         id: '(Ult) leva_ult_lv1',
         name: 'Quantum Calculation',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Deals AoE Electric damage equal to 60% of attack to all enemy targets within 7 tiles and generates Voltage tiles for 3 turns. Leva gains Overclocking Strike for 3 turns. After this attack, Leva can use the active skill Superconductive Strike once.',
         multiplier: 0.6,
         vertebrae: ['v0', 'v1', 'v2'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: 6,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -156,12 +198,16 @@ const DOLLS = [
       {
         id: '(Ult) leva_ult_lv2',
         name: 'Quantum Calculation',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Deals AoE Electric damage equal to 60% of attack to all enemy targets within 7 tiles and generates Voltage tiles for 3 turns. Leva gains Overclocking Strike for 3 turns. After this attack, Leva can use the active skill Superconductive Strike once. \nDepending on the number of stacks of Superconductive Code expended, the damage multiplier of Superconductive Strike is increased to 75%/90%/120%/180%, and the stability damage dealt is increased to 1 point/2 points/4 points/8 points.\nWhen using Superconductive Strike, ignores 15% of the target\'s defense. After this skill, Leva gains 1 stack of Superconductive Code.',
         multiplier: 0.6,
         vertebrae: ['v3', 'v4'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: 6,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -170,12 +216,16 @@ const DOLLS = [
       {
         id: '(Ult) leva_ult_lv3',
         name: 'Quantum Calculation',
-        dmg_type: 'Electric',
-        skill_type: 'aoe',
+        phase_dmg_type: 'electric',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Leva cleanses all debuffs on self and deals AoE Electric damage equal to 90% of attack to all enemy targets within 7 tiles and generates Voltage tiles for 3 turns. Leva gains Overclocking Strike for 3 turns. After this attack, Leva can use the active skill Superconductive Strike once.\nDepending on the number of stacks of Superconductive Code expended, the damage multiplier of Superconductive Strike is increased to 75%/90%/120%/180%, and the stability damage dealt is increased to 1 point/2 points/4 points/8 points.\nWhen using Superconductive Strike, ignores 15% of the target\'s defense. After this skill, Leva gains 1 stack of Superconductive Code.',
         multiplier: 0.9,
         vertebrae: ['v5', 'v6'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: 6,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -184,12 +234,16 @@ const DOLLS = [
       {
         id: 'leva_passive_lv1',
         name: 'Fox\'s Scheme',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'oot',
+        ammo_type:      'melee',
         description: 'At the start of the turn, when Leva triggers a Voltage tile reaction, she gains 1 stacks of Superconductive Code. If Leva has Positive Charge, Electric damage dealt is increased by 10%.\nWhen Negative Charge is applied to an enemy unit within her attack range , Leva performs one instance of Emergency Support, dealing melee Electric damage equal to 60% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. If this kills the target, she applies Negative Charge to the nearest enemy unit within range for 1 turn. This effect can be triggered up to 2 times per turn.',
         multiplier: 0.60,
         vertebrae: ['v0'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: false,
         scalingStat: 'ATK',
       },
@@ -198,12 +252,16 @@ const DOLLS = [
       {
         id: 'leva_passive_lv2',
         name: 'Fox\'s Scheme',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'oot',
+        ammo_type:      'melee',
         description: 'At the start of the turn, when Leva triggers a Voltage tile reaction, or when an enemy with Negative Charge dies within her attack range, she gains 1 stacks of Superconductive Code. If she has Positive Charge, Electric damage dealt is increased by 25%.\nWhen Negative Charge is applied to an enemy unit within her attack range , Leva performs one instance of Emergency Support, dealing melee Electric damage equal to 60% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. If this kills the target, she applies Negative Charge to the nearest enemy unit within range for 1 turn. This effect can be triggered up to 3 times per turn.',
         multiplier: 0.60,
         vertebrae: ['v1', 'v2', 'v3', 'v4', 'v5'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: false,
         scalingStat: 'ATK',
       },
@@ -212,12 +270,16 @@ const DOLLS = [
       {
         id: 'leva_passive_lv3',
         name: 'Fox\'s Scheme',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'oot',
+        ammo_type:      'melee',
         description: 'At the start of the turn, Leva gains 2 stacks of Superconductive Code. In addition, when Leva triggers a Voltage tile reaction, or when an enemy with Negative Charge dies within her attack range, Leva gains 1 stacks of Superconductive Code. If Leva has Positive Charge, Electric damage dealt is increased by 25%.\nLeva\'s attack is increased by 15% the first time she reaches 4 stacks of Superconductive Code in battle.\nWhen Negative Charge is applied to an enemy target within range , Leva performs one instance of Emergency Support, dealing melee Electric damage equal to 60% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. If this kills the target, she applies Negative Charge to the nearest enemy unit within range for 1 turn. This effect can be triggered up to 3 times per turn. She can also use the active skill Superconductive Strike after using the active skill Rational Suppression or Ordered Disruption. ',
         multiplier: 0.60,
         vertebrae: ['v6'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: false,
         scalingStat: 'ATK',
       },
@@ -226,8 +288,10 @@ const DOLLS = [
       {
         id: 'leva_sa_lv1',
         name: 'Superconductive Strike',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      'melee',
         description: 'Selects one enemy target within 7 tiles, dealing melee Electric damage equal to 50% of attack to it. Before the skill resolves, generates Voltage tiles within 1 tile around the target for 3 turns.\nExpends all stacks of Superconductive Code. Depending on the number of stacks expended, the damage multiplier is changed to 60%/70%/85%/120%, and the stability damage dealt is changed to 1 point/2 points/3 points/6 points.',
         multiplier: [
           { label: '0 stacks (50%)',  value: 0.50 },
@@ -238,6 +302,8 @@ const DOLLS = [
         ],
         vertebrae: ['v0', 'v1', 'v2'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
         notes: 'Stability damage: 1 / 2 / 3 / 6 points for 1–4 stacks respectively.',
@@ -247,8 +313,10 @@ const DOLLS = [
       {
         id: 'leva_sa_lv2',
         name: 'Superconductive Strike',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      'melee',
         description: 'Selects one enemy target within 7 tiles, dealing melee Electric damage equal to 50% of attack to it. Before the skill resolves, generates Voltage tiles within 1 tile around the target for 3 turns.\nExpends all stacks of Superconductive Code. Depending on the number of stacks expended, the damage multiplier is changed to 75%/90%/120%/180%, and the stability damage dealt is changed to 1 point/2 points/4 points/8 points. This attack ignores 15% of the target\'s defense. After using this skill, Leva gains 1 stack of Superconductive Code. ',
         multiplier: [
           { label: '0 stacks (50%)',  value: 0.50 },
@@ -259,6 +327,8 @@ const DOLLS = [
         ],
         vertebrae: ['v3', 'v4', 'v5', 'v6'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
         notes: 'Stability damage: 1 / 2 / 4 / 8 points for 1–4 stacks respectively.',
@@ -268,14 +338,18 @@ const DOLLS = [
       {
         id: 'leva_sb_lv1',
         name: 'Overclocking Strike',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'oot',
+        ammo_type:      null,
         description: 'When the target\'s stability is at 0, excess stability damage is converted into Electric damage, dealing additional Electric damage to the target equal to (overflow stability damage amount) x 5% of attack (This will not trigger Negative Charge). Considered a buff, cannot be cleansed.',
         multiplier: null,
         scalingType: 'stability_overflow',
         overflowRate: 5,  // effective mult = overflow_stab × 5% (user inputs overflow)
         vertebrae: ['v0', 'v1', 'v2', 'v3', 'v4'],
         cooldown: null,
+        stability_dmg: null,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -284,26 +358,25 @@ const DOLLS = [
       {
         id: 'leva_sb_lv2',
         name: 'Overclocking Strike',
-        dmg_type: 'Electric',
-        skill_type: 'melee',
+        phase_dmg_type: 'electric',
+        target_type:    'targeted',
+        skill_type:     'oot',
+        ammo_type:      null,
         description: 'When the target\'s stability is at 0, excess stability damage is converted into Electric damage, dealing additional Electric damage to the target equal to (overflow stability damage amount) x 8% of attack (This will not trigger Negative Charge). Considered a buff, cannot be cleansed.',
         multiplier: null,
         scalingType: 'stability_overflow',
         overflowRate: 8,  // effective mult = overflow_stab × 8% (user inputs overflow)
         vertebrae: ['v5', 'v6'],
         cooldown: null,
+        stability_dmg: null,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
     ],
 
+    // ── Leva passives ─────────────────────────────────────────────────────
     passives: [
-      // S1 always grants +25% crit DMG for its own attack — pre-fill critdmg_extra
-      // Note: this will be overridden by the S1 toggle in mechanics for per-skill use
-    ],
-
-    // ── Leva-specific mechanics ───────────────────────────────────────────
-    mechanics: [
 
       // ── Superconductive Code ─────────────────────────────────────────────
       {
@@ -420,6 +493,7 @@ const DOLLS = [
 
     ],
 
+    flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'sentinel', 'vanguard', 'vanguard'],
     notes: 'Electric Sentinel. Core mechanics: Superconductive Code stacks (0–4), Voltage Tiles, Negative Charge conditional bonuses.',
   },
 
@@ -431,17 +505,21 @@ const DOLLS = [
     phase: 'Corrosion',
     baseCritDmg: 150,   // update with actual base value when confirmed
 
-        skills: [
+    skills: [
 
       {
         id: 'klukai_basic',
         name: 'Swift Strike',
-        dmg_type: 'Physical',
-        skill_type: 'target',
+        phase_dmg_type: 'physical',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      'medium',
         description: 'Selects one enemy target within 8 tiles and deals Physical damage equal to 80% of attack to it.',
         multiplier: 0.80,
         vertebrae: null,
         cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -449,8 +527,10 @@ const DOLLS = [
       {
         id: 'klukai_s1_lv1',
         name: '(S2) Pinpoint Detonation',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      'medium',
         description: 'Selects 1 enemy target within 8 tiles, dealing AoE Corrosion damage equal to 80% of attack. Performs an additional attack, dealing AoE Corrosion damage equal to 60% of attack to the target and all enemy targets within 3 tiles, pulling all affected enemy targets 1 tile towards the center.\nIf any enemy targets are killed, reduces the cooldown of the Ultimate skill Devastating Drift by 1 turn and gains 2 points of Confectance Index. If no enemy targets are killed, applies 1 stack of Corrosive Infusion to the target for 2 turns.',
         multiplier: [
           { label: 'Hit 1', value: 0.80 },
@@ -459,6 +539,8 @@ const DOLLS = [
         multiHit: true,
         vertebrae: ['v0', 'v1', 'v2', 'v3'],
         cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: 3,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -466,8 +548,10 @@ const DOLLS = [
       {
         id: 'klukai_s1_lv2',
         name: '(S1) Pinpoint Detonation',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 enemy target within 8 tiles, dealing AoE Corrosion damage equal to 100% of attack. Performs an additional attack, dealing AoE Corrosion damage equal to 60% of attack to the target and all enemy targets within 3 tiles. For each stack of Corrosive Infusion the target has, the damage multiplier is increased by 5%, and all affected enemy targets are pulled 1 tile towards the center. If a phase weakness is exploited, the attack ignores 15% of Cover damage reduction.\nIf any enemy targets are killed, reduces the cooldown of the Ultimate skill Devastating Drift by 1 turn and gains 2 points of Confectance Index. If no enemy targets are killed, applies 1 stack of Corrosive Infusion to the target for 2 turns.',
         multiplier: [
           { label: 'Hit 1', value: 1.00 },
@@ -476,6 +560,8 @@ const DOLLS = [
         multiHit: true,
         vertebrae: ['v4', 'v5', 'v6'],
         cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: 3,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -483,12 +569,16 @@ const DOLLS = [
       {
         id: 'klukai_s2_lv1',
         name: '(S2) Overpowering Corrosion',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 tile within 8 tiles, dealing AoE Corrosion damage equal to 90% of attack to all enemy targets within 3 tiles, and applies Toxic Infiltration for 2 turns. Increases damage by 15% to targets already affected by Toxic Infiltration.',
         multiplier: 0.90,
         vertebrae: ['v0'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: 3,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -496,12 +586,16 @@ const DOLLS = [
       {
         id: 'klukai_s2_lv2',
         name: '(S2) Overpowering Corrosion',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 tile within 8 tiles, dealing AoE Corrosion damage equal to 90% of attack to all enemy targets within 3 tiles, and applies Toxic Infiltration for 2 turns. If the target survives, triggers the on-death effect of Toxic Infiltration. Increases damage dealt by 30% to targets already affected by Toxic Infiltration.',
         multiplier: 0.90,
         vertebrae: ['v1', 'v2', 'v3', 'v4'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: 3,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -509,12 +603,16 @@ const DOLLS = [
       {
         id: 'klukai_s2_lv3',
         name: '(S2) Overpowering Corrosion',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 tile within 8 tiles, dealing AoE Corrosion damage equal to 110% of attack to all enemy targets within 5 tiles, and applies Toxic Infiltration for 2 turns. If the target survives, triggers the on-death effect of Toxic Infiltration. If the target is inflicted with a Corrosion debuff, applies Toxic Infiltration for 2 turns before the attack. Increases damage by 30% to targets already affected by Toxic Infiltration.',
         multiplier: 1.10,
         vertebrae: ['v5', 'v6'],
         cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: 3,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -522,12 +620,16 @@ const DOLLS = [
       {
         id: 'klukai_ult_lv1',
         name: '(Ult) Devastating Drift',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 tile within a cross-shaped area of 4 to 8 tiles, landing on the selected tile and dealing AoE Corrosion damage equal to 100% of attack to all enemy targets in a path 5 tiles wide. Gains 6 tiles of Additional Movement. If 2 or more targets are killed, this skill can be used again, up to a maximum of 1 additional time.',
         multiplier: 1.00,
         vertebrae: ['v0', 'v1', 'v2'],
-        cooldown: null,
+        cooldown: 6,
+        stability_dmg: 2,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -535,12 +637,16 @@ const DOLLS = [
       {
         id: 'klukai_ult_lv2',
         name: '(Ult) Devastating Drift',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 tile within a cross-shaped area of 4 to 8 tiles, landing on the selected tile, applying Defense Down II and Toxic Infiltration for 2 turns, and dealing AoE Corrosion damage equal to 100% of attack to all enemy targets in a path 5 tiles wide. Gains 6 tiles of Additional Movement. For each enemy hit, increases damage dealt by an additional 10%, up to a maximum of 50%. If a Boss is hit, this increase will be immediately raised to the maximum value of 50%.\nIf 2 or more targets or a Boss is hit, this skill can be used again, up to a maximum of 1 additional time.',
         multiplier: 1.00,
         vertebrae: ['v3', 'v4', 'v5'],
-        cooldown: null,
+        cooldown: 6,
+        stability_dmg: 2,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -548,12 +654,16 @@ const DOLLS = [
       {
         id: 'klukai_ult_lv3',
         name: '(Ult) Devastating Drift',
-        dmg_type: 'Corrosion',
-        skill_type: 'AoE',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'active',
+        ammo_type:      null,
         description: 'Selects 1 tile within a cross-shaped area of 4 to 8 tiles, landing on the selected tile, applying Defense Down II and Toxic Infiltration for 2 turns, dealing AoE Corrosion damage that ignores Cover damage reduction equal to 100% of attack to all enemy targets in a path 7 tiles wide. Applies Dismay for 2 turns, and gains 6 tiles of Additional Movement. For each enemy hit, increases damage dealt by an additional 10%, up to a maximum of 50%. If a Boss is hit, this increase will be immediately raised to the maximum value of 50%.\nIf 2 or more targets or a Boss is hit, this skill can be used again, up to a maximum of 1 additional time.\nAfter the skill is used, triggers all enemies\' effects of Corrosive Infusion and the on-death effects of Toxic Infiltration.',
         multiplier: 1.00,
         vertebrae: ['v6'],
-        cooldown: null,
+        cooldown: 6,
+        stability_dmg: 2,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -561,12 +671,16 @@ const DOLLS = [
       {
         id: 'klukai_passive_lv1',
         name: 'Elite\'s Pride',
-        dmg_type: null,
-        skill_type: null,
+        phase_dmg_type: null,
+        target_type:    null,
+        skill_type:     null,
+        ammo_type:      null,
         description: 'Immune to all negative Crowd Control tile effects. When dealing damage with active attacks, applies 1 stack of Corrosive Infusion to the target for 2 turns, and gains 1 stack of Competitive Spirit after skill usage.\nEach time Klukai performs an active attack or other allied units deal Corrosion damage, Klukai gains 1 point of Confectance Index. For every 3 points of Confectance Index gained, reduces the cooldown of her Ultimate skill by 1 turn.',
         multiplier: null,
         vertebrae: ['v0', 'v1'],
         cooldown: null,
+        stability_dmg: null,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -574,12 +688,16 @@ const DOLLS = [
       {
         id: 'klukai_passive_lv2',
         name: 'Elite\'s Pride',
-        dmg_type: null,
-        skill_type: null,
+        phase_dmg_type: null,
+        target_type:    null,
+        skill_type:     null,
+        ammo_type:      null,
         description: 'Immune to all negative Crowd Control tile effects.\nAt the start of the battle, gains 3 stacks of Competitive Spirit. When dealing damage with active attacks, applies 1 stack of Corrosive Infusion to the target for 2 turns.\nEach time Klukai performs an active attack or other allied units deal Corrosion damage, Klukai gains 1 stack of Competitive Spirit after skill usage and gains 1 point of Confectance Index.\nFor every 3 points of Confectance Index gained, applies an additional 1 stack of Corrosive Infusion to enemy units with Corrosive Infusion, and reduces the cooldown of her Ultimate skill by 2 turns.',
         multiplier: null,
         vertebrae: ['v2', 'v3', 'v4', 'v5'],
         cooldown: null,
+        stability_dmg: null,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -587,8 +705,10 @@ const DOLLS = [
       {
         id: 'klukai_sa_lv1',
         name: 'Corrosive Infusion',
-        dmg_type: 'Corrosion',
-        skill_type: 'aoe',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'oot',
+        ammo_type:      null,
         description: 'At the end of the action, the applier deals AoE Corrosion damage equal to 12% of attack. For each additional stack, the damage multiplier is increased by 12%. Upon being hit by active attacks from Klukai or Corrosion damage from other enemies, gain 1 additional stack and refresh the debuff duration, maximum of 10 stacks. Removed after the applier is killed. Considered a Corrosion debuff, cannot be cleansed.',
         multiplier: null,
         scalingType: 'stack_bonus',
@@ -597,6 +717,8 @@ const DOLLS = [
         stackMax: 10,
         vertebrae: ['v0', 'v1'],
         cooldown: null,
+        stability_dmg: null,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
@@ -604,8 +726,10 @@ const DOLLS = [
       {
         id: 'klukai_sa_lv2',
         name: 'Corrosive Infusion',
-        dmg_type: 'Corrosion',
-        skill_type: 'aoe',
+        phase_dmg_type: 'corrosion',
+        target_type:    'aoe',
+        skill_type:     'oot',
+        ammo_type:      null,
         description: 'Reduce defense by 1%. At the end of the action, the applier deals AoE Corrosion damage equal to 12% of attack. For each additional stack, the damage multiplier is increased by 12%. Upon being hit by active attacks from Klukai or Corrosion damage from other enemies, gain 2 additional stacks and refresh the debuff duration, maximum of 15 stacks. Removed after the applier is killed. Considered a Corrosion debuff, cannot be cleansed.',
         multiplier: null,
         scalingType: 'stack_bonus',
@@ -614,13 +738,77 @@ const DOLLS = [
         stackMax: 15,
         vertebrae: ['v2', 'v3', 'v4', 'v5', 'v6'],
         cooldown: null,
+        stability_dmg: null,
+        confectance_cost: null,
         canCrit: true,
         scalingStat: 'ATK',
       },
     ],
 
-    passives: [],
-    mechanics: [],
+    // ── Klukai passives ───────────────────────────────────────────────────
+    passives: [
+
+      {
+        type: 'stack_selector',
+        key: 'competitive_spirit_lv1',
+        label: 'Competitive Spirit',
+        max: 8,
+        effect: (stacks) => ({
+          corroDmgPct: stacks * 5,
+        }),
+        vertebrae: ['v0', 'v1'],
+        notes: '+5% Corrosion DMG per stack.',
+      },
+
+      {
+        type: 'stack_selector',
+        key: 'competitive_spirit_lv2',
+        label: 'Competitive Spirit',
+        max: 12,
+        effect: (stacks) => ({
+          corroDmgPct: stacks * 5,
+        }),
+        vertebrae: ['v2', 'v3', 'v4', 'v5', 'v6'],
+        notes: '+5% Corrosion DMG per stack.',
+      },
+
+      {
+        type: 'stack_selector',
+        key: 'corrosive_infusion_lv1',
+        label: 'Corrosive Infusion',
+        max: 10,
+        effect: (stacks) => ({
+          defReducPct: stacks * 1,
+        }),
+        vertebrae: ['v0', 'v1'],
+        notes: '-1% DEF per stack.',
+      },
+
+      {
+        type: 'stack_selector',
+        key: 'corrosive_infusion_lv2',
+        label: 'Corrosive Infusion',
+        max: 15,
+        effect: (stacks) => ({
+          defReducPct: stacks * 1,
+        }),
+        vertebrae: ['v2', 'v3', 'v4', 'v5', 'v6'],
+        notes: '-1% DEF per stack.',
+      },
+
+    ],
+    flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'sentinel', 'vanguard', 'bulwark'],
+
+    // Thresholds from screenshot (Imago Factor totals required per type)
+    imagoform: [
+      { tier: 'embryo',   requires: {                 vanguard: 1, sentinel: 5  }, effect: {dmgPct: 5},        description: 'Damage dealt to enemy units with Corrosion debuffs is increased by 5%.' },
+      { tier: 'seedling', requires: { bulwark: 1,     vanguard: 2, sentinel: 7  }, effect: {dmgReduc: 5},      description: 'Physical and phase damage taken is reduced by 5%.' },
+      { tier: 'sprout',   requires: { bulwark: 2,     vanguard: 3, sentinel: 8  }, effect: {corroDmgPct: 5},   description: 'Corrosion damage dealt is increased by 5%.' },
+      { tier: 'shoot',    requires: { bulwark: 3,     vanguard: 4, sentinel: 11 }, effect: {dmgPct: 10},       description: 'Damage dealt to enemy targets in Stability Break is increased by 10%.' },
+      { tier: 'bud',      requires: { bulwark: 4,     vanguard: 4, sentinel: 15 }, effect: {atkPct: 8},        description: 'Attack is increased by 8%.' },
+      { tier: 'blossom',  requires: { bulwark: 5,     vanguard: 6, sentinel: 18 }, effect: {dmgPct: 12},       description: 'The damage of attacks which hit 2 or more enemy units is increased by 12%.' },
+    ],
+
     notes: '',
    },
 

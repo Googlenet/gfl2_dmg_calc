@@ -276,28 +276,28 @@ window.dollMechState = {};  // exposed globally so calculator.js can read it
 
 function onDollMechToggle(key) {
   window.dollMechState[key] = !window.dollMechState[key];
-  renderDollMechanics();
+  renderDollPassives();
   updateLive();
 }
 
 function onDollMechStack(key, val) {
   // clicking active value turns it off
   window.dollMechState[key] = window.dollMechState[key] === val ? 0 : val;
-  renderDollMechanics();
+  renderDollPassives();
   updateLive();
 }
 
-function renderDollMechanics() {
+function renderDollPassives() {
   const panel = document.getElementById('doll-mechanics-panel');
   if (!panel) return;
 
-  if (!activeDoll?.mechanics?.length) {
+  if (!activeDoll?.passives?.length) {
     panel.style.display = 'none';
     return;
   }
   panel.style.display = 'block';
 
-  const mechHtml = activeDoll.mechanics.filter(mech =>
+  const mechHtml = activeDoll.passives.filter(mech =>
     !mech.vertebrae || mech.vertebrae.includes(activeVertebrae)
   ).map(mech => {
     if (mech.type === 'stack_selector') {
@@ -305,7 +305,7 @@ function renderDollMechanics() {
       const eff    = active > 0 ? mech.effect(active) : {};
       const badges = Object.entries(eff)
         .filter(([, v]) => v)
-        .map(([k, v]) => `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(255,170,0,0.15);color:var(--crit);">${k} +${v}${k==='atkPct'||k==='dmgPct'||k==='critDmg'||k==='critRate'?'%':''}</span>`)
+        .map(([k, v]) => { const suf = (k.endsWith('Pct')||k.endsWith('CritDmg')||k==='critDmg'||k==='critRate') ? '%' : (k.endsWith('Multiplier') ? '×' : ''); return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(255,170,0,0.15);color:var(--crit);">${k} +${v}${suf}</span>`; })
         .join('');
       const buttons = Array.from({length: mech.max}, (_, i) => {
         const n = i + 1;
@@ -339,8 +339,8 @@ function renderDollMechanics() {
       const effEntries = Object.entries(mech.effect).filter(([,v]) => v);
       const badge = on
         ? effEntries.map(([k,v]) => {
-            const isMultiplier = k === 'dmgMultiplier' || k === 'fixedAtkMultiplier';
-            const display = isMultiplier ? `×${v}` : `+${v}%`;
+            const suf = k.endsWith('Multiplier') ? '×' : '%';
+            const display = k.endsWith('Multiplier') ? `×${v}` : `+${v}${suf}`;
             return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(167,139,250,0.15);color:var(--dmg-color);">${k} ${display}</span>`;
           }).join('')
         : '';
@@ -359,7 +359,7 @@ function renderDollMechanics() {
 
   panel.innerHTML = `
     <div class="panel" style="margin-bottom:14px;border-color:var(--crit);">
-      <div class="panel-label" style="color:var(--crit);">${activeDoll.name} — Kit Mechanics</div>
+      <div class="panel-label" style="color:var(--crit);">${activeDoll.name} — Passives</div>
       ${mechHtml}
     </div>`;
 }
@@ -383,32 +383,35 @@ function populateDollSelector() {
 function onDollChange() {
   activeDoll = getDoll(document.getElementById('doll-select').value);
   activeMultIndex = 0;
-  // Reset all mechanic state when doll changes
+  // Reset all passive state when doll changes
   window.dollMechState = {};
-  if (activeDoll?.mechanics) {
-    activeDoll.mechanics.forEach(m => {
+  if (activeDoll?.passives) {
+    activeDoll.passives.forEach(m => {
       window.dollMechState[m.key] = m.type === 'stack_selector' ? 0 : false;
     });
   }
-  renderDollMechanics();
+  window.imagoformState = {};
+  renderDollPassives();
   renderSkillSelector();
   applyDollPassives();
+  renderFlowerPanel();
+  renderImagoformPanel();
   updateLive();
 }
 
 function onVertebraeChange() {
   activeVertebrae = document.getElementById('vertebrae-select').value;
   activeMultIndex = 0;
-  // Reset state for any mechanics that are no longer valid at this V level
-  if (activeDoll?.mechanics) {
-    activeDoll.mechanics.forEach(m => {
+  // Reset state for any passives that are no longer valid at this V level
+  if (activeDoll?.passives) {
+    activeDoll.passives.forEach(m => {
       if (m.vertebrae && !m.vertebrae.includes(activeVertebrae)) {
         window.dollMechState[m.key] = m.type === 'stack_selector' ? 0 : false;
       }
     });
   }
   renderSkillSelector();
-  renderDollMechanics();
+  renderDollPassives();
   updateLive();
 }
 
@@ -497,8 +500,24 @@ function renderSkillCard() {
   }
 
   const isMulti = Array.isArray(activeSkill.multiplier);
-  const dmgBadge = `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(167,139,250,0.15);color:var(--dmg-color);margin-left:6px;">${activeSkill.dmg_type}</span>`;
-  const typeBadge = `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(0,170,255,0.1);color:var(--accent);margin-left:4px;">${activeSkill.skill_type}</span>`;
+
+  const PHASE_COLORS = {
+    electric: '#a78bfa', corrosion: '#7ec87e', burn: '#ff8c42',
+    hydro: '#63b3ed', physical: '#c8dff0', freeze: '#93e4f5',
+  };
+  const makeBadge = (text, bg, color) =>
+    `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:${bg};color:${color};margin-left:4px;font-family:'Share Tech Mono',monospace;">${text}</span>`;
+
+  const phaseKey = activeSkill.phase_dmg_type?.toLowerCase() || '';
+  const phaseColor = PHASE_COLORS[phaseKey] || 'var(--text)';
+  const phaseBadge   = activeSkill.phase_dmg_type
+    ? makeBadge(activeSkill.phase_dmg_type, `${phaseColor}22`, phaseColor) : '';
+  const targetBadge  = activeSkill.target_type
+    ? makeBadge(activeSkill.target_type, 'rgba(0,170,255,0.1)', 'var(--accent)') : '';
+  const skillBadge   = activeSkill.skill_type
+    ? makeBadge(activeSkill.skill_type, 'rgba(255,170,0,0.1)', 'var(--crit)') : '';
+  const ammoBadge    = activeSkill.ammo_type
+    ? makeBadge(activeSkill.ammo_type, 'rgba(255,107,107,0.1)', 'var(--atk-color)') : '';
 
   let multSection = '';
   if (activeSkill.scalingType === 'stack_bonus' && !activeSkill.multiHit) {
@@ -591,12 +610,16 @@ function renderSkillCard() {
 
   card.innerHTML = `
     <div class="skill-card-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;">
-      ${activeSkill.name}${dmgBadge}${typeBadge}
+      ${activeSkill.name}${phaseBadge}${targetBadge}${skillBadge}${ammoBadge}
     </div>
     <div class="skill-card-desc" style="margin-top:6px;">${activeSkill.description}</div>
     ${multSection}
     ${activeSkill.notes ? `<div class="skill-card-desc" style="margin-top:8px;color:var(--crit);">⚠ ${activeSkill.notes}</div>` : ''}
-    ${activeSkill.cooldown ? `<div class="skill-card-desc" style="margin-top:4px;color:var(--text-dim);">Cooldown: ${activeSkill.cooldown} turn${activeSkill.cooldown > 1 ? 's' : ''}</div>` : ''}
+    <div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
+      ${activeSkill.cooldown != null ? `<div class="skill-card-desc" style="color:var(--text-dim);">CD: ${activeSkill.cooldown} turn${activeSkill.cooldown > 1 ? 's' : ''}</div>` : ''}
+      ${activeSkill.stability_dmg != null ? `<div class="skill-card-desc" style="color:var(--def-color);">Stab DMG: ${activeSkill.stability_dmg} pt${activeSkill.stability_dmg !== 1 ? 's' : ''}</div>` : ''}
+      ${activeSkill.confectance_cost != null ? `<div class="skill-card-desc" style="color:var(--accent2);">Cost: ${activeSkill.confectance_cost}</div>` : ''}
+    </div>
   `;
 }
 
@@ -648,6 +671,8 @@ function applyDollPassives() {
 // ── Live Update (display only) ────────────────────────────────────────────────
 
 function updateLive() {
+  renderFlowerSummary();
+  renderTeamBuffSummary();
 
   const mech = getDollMechanicsResult();
 
@@ -744,6 +769,29 @@ function updateLive() {
   ckeyCritRateRow.style.display = ckeyCritRate > 0 ? '' : 'none';
   if (ckeyCritDmg  > 0) document.getElementById('ckey-crit-dmg-display').textContent  = `+${ckeyCritDmg}%`;
   if (ckeyCritRate > 0) document.getElementById('ckey-crit-rate-display').textContent = `+${ckeyCritRate}%`;
+
+  // Passive DEF reduction row
+  const passiveDefPct = getDollPassivesResult().defReducPct;
+  const passiveDefRow = document.getElementById('passive-def-reduc-row');
+  if (passiveDefRow) {
+    passiveDefRow.style.display = passiveDefPct > 0 ? '' : 'none';
+    if (passiveDefPct > 0) document.getElementById('passive-def-reduc-display').textContent = `-${passiveDefPct.toFixed(0)}%`;
+  }
+
+  // Flower display rows
+  const flower = getFlowerResult();
+  const flowerAtkRow  = document.getElementById('flower-atk-pct-row');
+  const flowerDmgRow  = document.getElementById('flower-dmg-pct-row');
+  const flowerCritDmgRow  = document.getElementById('flower-crit-dmg-row');
+  const flowerCritRateRow = document.getElementById('flower-crit-rate-row');
+  if (flowerAtkRow)  flowerAtkRow.style.display  = flower.atkPct  > 0 ? '' : 'none';
+  if (flowerDmgRow)  flowerDmgRow.style.display  = flower.dmgPct  > 0 ? '' : 'none';
+  if (flowerCritDmgRow)  flowerCritDmgRow.style.display  = flower.critDmg  > 0 ? '' : 'none';
+  if (flowerCritRateRow) flowerCritRateRow.style.display = flower.critRate > 0 ? '' : 'none';
+  if (flower.atkPct  > 0) document.getElementById('flower-atk-pct-display').textContent = `+${flower.atkPct.toFixed(2)}%`;
+  if (flower.dmgPct  > 0) document.getElementById('flower-dmg-pct-display').textContent = `+${flower.dmgPct.toFixed(2)}%`;
+  if (flower.critDmg  > 0) document.getElementById('flower-crit-dmg-display').textContent  = `+${flower.critDmg.toFixed(2)}%`;
+  if (flower.critRate > 0) document.getElementById('flower-crit-rate-display').textContent = `+${flower.critRate.toFixed(2)}%`;
 
   // Weakness
   const a = document.getElementById('ammoWeak')?.checked ? 1 : 0;
@@ -913,6 +961,396 @@ function onCkeyEffectToggle(i, checked) {
   updateLive();
 }
 
+// ── Remolding Pattern (Flowers) ──────────────────────────────────────────────
+
+const FLOWER_TYPE_COLORS = {
+  sentinel: 'var(--atk-color)',
+  vanguard: 'var(--dmg-color)',
+  support:  'var(--accent2)',
+  bulwark:  'var(--def-color)',
+};
+
+// Stat ids whose values are flat (not percentages) — no % sign in summary
+const FLOWER_FLAT_IDS = new Set(['stabDmg', 'fixedDmg', 'stabRecov']);
+
+// Stat id → display label for summary
+const FLOWER_STAT_DISPLAY = {
+  atkPct: 'ATK%', critRate: 'Crit Rate', critDmg: 'Crit DMG', dmgPct: 'DMG%',
+  bossDmgPct: 'Boss DMG%', aoeDmgPct: 'AOE DMG%', targetDmgPct: 'Target DMG%',
+  targetCritDmg: 'Target Crit DMG', aoeCritDmg: 'AOE Crit DMG',
+  corroDmgPct: 'Corrosive DMG%', hydroDmgPct: 'Hydro DMG%', burnDmgPct: 'Burn DMG%',
+  elecDmgPct: 'Electric DMG%', physDmgPct: 'Physical DMG%', freezeDmgPct: 'Freeze DMG%',
+  corroDmgReduc: 'Corrosive Res', hydroDmgReduc: 'Hydro Res', burnDmgReduc: 'Burn Res',
+  elecDmgReduc: 'Electric Res', physDmgReduc: 'Physical Res', freezeDmgReduc: 'Freeze Res',
+  dmgReduc: 'DMG Reduction', activeCritDmg: 'Active Crit DMG', ootCritDmg: 'OOT Crit DMG',
+  ootDmgPct: 'OOT DMG%', activeDmgPct: 'Active DMG%', flatAtk: 'Flat ATK',
+  flatHp: 'Flat HP', defPct: 'DEF%', hpPct: 'HP%',
+  stabBreakDmgPct: 'Stab Break DMG%', stabDmg: 'Stab DMG', fixedDmg: 'Fixed DMG',
+  hpRecov: 'HP Recovery', stabRecov: 'Stab Recovery', healPct: 'Heal%', shieldPct: 'Shield%',
+  targetDmgReducPct: 'Target DMG Reduc', aoeDmgReducPct: 'AOE DMG Reduc',
+};
+
+function buildFlowerOptgroups(pool) {
+  const grouped = {};
+  for (const s of pool) {
+    if (!grouped[s.type]) grouped[s.type] = [];
+    grouped[s.type].push(s);
+  }
+  return Object.entries(grouped).map(([typeKey, entries]) => {
+    const groupLabel = FLOWER_TYPES[typeKey]?.label || typeKey;
+    const opts = entries.map(s => `<option value="${s.label}">${s.label}</option>`).join('');
+    return `<optgroup label="${groupLabel}">${opts}</optgroup>`;
+  }).join('');
+}
+
+function findFlowerEntry(tier, typeKey, label) {
+  if (!label) return null;
+  if (tier === 'main') {
+    return (getFlowerType(typeKey)?.mainStatPool || []).find(s => s.label === label) || null;
+  }
+  return (tier === 'sub2' ? FLOWER_SUB2_POOL : FLOWER_SUB3_POOL).find(s => s.label === label) || null;
+}
+
+function updateFlowerLevelSelect(slot, tier) {
+  const typeEl = document.getElementById(`flower-${slot}-${tier}-type`);
+  const lvEl   = document.getElementById(`flower-${slot}-${tier}-lv`);
+  if (!typeEl || !lvEl) return;
+  const entry = findFlowerEntry(tier, activeDoll?.flowerSlots?.[slot], typeEl.value);
+  if (!entry) {
+    lvEl.innerHTML = '<option value="">—</option>';
+    lvEl.disabled = true;
+    return;
+  }
+  lvEl.disabled = false;
+  const maxPerSlot = FLOWER_LEVEL_CAPS[tier];
+  const prevLv = parseInt(lvEl.value) || 0;
+  lvEl.innerHTML = '<option value="">—</option>' +
+    Array.from({ length: maxPerSlot }, (_, i) => {
+      const lv = i + 1;
+      return `<option value="${lv}"${lv === prevLv ? ' selected' : ''}>Lv ${lv}</option>`;
+    }).join('');
+}
+
+function renderFlowerStatRow(slot, tier, label) {
+  let opts;
+  if (tier === 'main') {
+    const ftype = getFlowerType(activeDoll.flowerSlots[slot]);
+    opts = (ftype?.mainStatPool || []).map(s => `<option value="${s.label}">${s.label}</option>`).join('');
+  } else if (tier === 'sub2') {
+    opts = buildFlowerOptgroups(FLOWER_SUB2_POOL);
+  } else {
+    opts = buildFlowerOptgroups(FLOWER_SUB3_POOL);
+  }
+  return `
+    <div class="flower-stat-row">
+      <div class="flower-stat-label">${label}</div>
+      <select class="flower-select" id="flower-${slot}-${tier}-type"
+        oninput="updateFlowerLevelSelect(${slot},'${tier}');updateLive()">
+        <option value="">—</option>
+        ${opts}
+      </select>
+      <select class="flower-lv-select" id="flower-${slot}-${tier}-lv"
+        disabled oninput="updateLive()">
+        <option value="">—</option>
+      </select>
+    </div>`;
+}
+
+// ── Imagoform ─────────────────────────────────────────────────────────────────
+
+window.imagoFactors = { sentinel: 0, vanguard: 0, support: 0, bulwark: 0 };
+window.imagoformState = {}; // tierKey → boolean (user toggled on)
+
+const IMAGO_TYPE_COLORS = {
+  sentinel: 'var(--atk-color)',
+  vanguard: 'var(--dmg-color)',
+  support:  'var(--accent2)',
+  bulwark:  'var(--def-color)',
+};
+
+// Compute imago factors by summing all selected levels per slot, grouped by slot type.
+// Called at the end of renderFlowerSummary() so it stays in sync with flower changes.
+function computeImagoFactors() {
+  const factors = { sentinel: 0, vanguard: 0, support: 0, bulwark: 0 };
+  if (!activeDoll?.flowerSlots?.length) { window.imagoFactors = factors; return; }
+  for (let i = 0; i < activeDoll.flowerSlots.length; i++) {
+    const slotType = activeDoll.flowerSlots[i];
+    for (const tier of ['main', 'sub2', 'sub3']) {
+      const typeEl = document.getElementById(`flower-${i}-${tier}-type`);
+      const lvEl   = document.getElementById(`flower-${i}-${tier}-lv`);
+      const lv = parseInt(lvEl?.value) || 0;
+      if (!lv || !typeEl?.value) continue;
+      const entry = findFlowerEntry(tier, slotType, typeEl.value);
+      // Main stats belong to the slot's type; sub2/sub3 entries carry their own type
+      const statType = (tier === 'main') ? slotType : (entry?.type || slotType);
+      if (statType in factors) factors[statType] += lv;
+    }
+  }
+  window.imagoFactors = factors;
+}
+
+function renderImagoformPanel() {
+  const panel   = document.getElementById('imagoform-panel');
+  const content = document.getElementById('imagoform-content');
+
+  // Always show the panel; content varies by doll state
+  panel.style.display = '';
+
+  if (!activeDoll) {
+    content.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0;">Select a doll to view imagoform.</div>';
+    return;
+  }
+
+  if (!activeDoll.imagoform?.length) {
+    content.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0;">No imagoform data for this doll.</div>';
+    return;
+  }
+
+  const factors = window.imagoFactors;
+
+  function isTierUnlocked(tier) {
+    return Object.entries(tier.requires).every(([type, min]) => (factors[type] || 0) >= min);
+  }
+
+  const factorChips = ['bulwark', 'vanguard', 'support', 'sentinel'].map(type => `
+    <div class="imagoform-factor-chip">
+      <span class="imagoform-factor-label" style="color:${IMAGO_TYPE_COLORS[type]};">${type}</span>
+      <span class="imagoform-factor-val">${factors[type] || 0}</span>
+    </div>`).join('');
+
+  const tierRows = activeDoll.imagoform.map(tier => {
+    const unlocked = isTierUnlocked(tier);
+    const active   = unlocked && !!window.imagoformState[tier.tier];
+    const reqChips = Object.entries(tier.requires).map(([type, min]) => {
+      const met = (factors[type] || 0) >= min;
+      return `<span class="imagoform-tier-req ${met ? 'met' : ''}" style="${met ? `color:${IMAGO_TYPE_COLORS[type]};` : ''}">${type[0].toUpperCase()}${type.slice(1,3)} ${factors[type] || 0}/${min}</span>`;
+    }).join('');
+    const label = IMAGOFORM_TIERS.find(t => t.key === tier.tier)?.label ?? tier.tier;
+    const desc  = tier.description
+      ? `<div class="imagoform-tier-desc">${tier.description}</div>`
+      : '';
+    return `
+      <div class="imagoform-tier-row ${unlocked ? 'unlocked' : ''} ${active ? 'active' : ''}">
+        <div class="imagoform-tier-header">
+          <span class="imagoform-tier-name">${label}</span>
+          <div class="imagoform-tier-reqs">${reqChips}</div>
+          <label class="toggle" style="opacity:${unlocked ? '1' : '0.3'};pointer-events:${unlocked ? 'auto' : 'none'};">
+            <input type="checkbox" ${active ? 'checked' : ''} ${unlocked ? '' : 'disabled'}
+              onchange="onImagoformToggle('${tier.tier}', this.checked)">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        ${desc}
+      </div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;text-transform:uppercase;margin-bottom:6px;">Imago Factor</div>
+    <div class="imagoform-factor-row">${factorChips}</div>
+    <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;text-transform:uppercase;margin-bottom:6px;margin-top:10px;">Tiers</div>
+    ${tierRows}
+  `;
+}
+
+function onImagoformToggle(tierKey, checked) {
+  window.imagoformState[tierKey] = checked;
+  renderImagoformPanel();
+  updateLive();
+}
+
+function renderFlowerPanel() {
+  const grid = document.getElementById('flower-grid');
+  if (!activeDoll?.flowerSlots?.length) {
+    grid.innerHTML = '<div style="font-size:11px;color:var(--text-dim);padding:4px 0;">Select a doll to view flower slots.</div>';
+    document.getElementById('flower-summary').innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = activeDoll.flowerSlots.map((typeKey, i) => {
+    const ftype = getFlowerType(typeKey);
+    if (!ftype) return '';
+    const color = FLOWER_TYPE_COLORS[typeKey] || 'var(--text)';
+    return `
+      <div class="flower-slot" id="flower-slot-${i}">
+        <div class="flower-type-badge" style="color:${color};border-color:${color};">${ftype.label}</div>
+        ${renderFlowerStatRow(i, 'main', 'Main')}
+        ${renderFlowerStatRow(i, 'sub2', 'Sub 2')}
+        ${renderFlowerStatRow(i, 'sub3', 'Sub 3')}
+      </div>`;
+  }).join('');
+}
+
+function renderFlowerSummary() {
+  const el = document.getElementById('flower-summary');
+  if (!activeDoll?.flowerSlots?.length) { el.innerHTML = ''; return; }
+
+  // Sum per-slot levels for each stat label
+  const combined = {};  // label → { entry, totalLevel }
+  for (let i = 0; i < activeDoll.flowerSlots.length; i++) {
+    const typeKey = activeDoll.flowerSlots[i];
+    for (const tier of ['main', 'sub2', 'sub3']) {
+      const typeEl = document.getElementById(`flower-${i}-${tier}-type`);
+      const lvEl   = document.getElementById(`flower-${i}-${tier}-lv`);
+      if (!typeEl || !lvEl) continue;
+      const lv = parseInt(lvEl.value) || 0;
+      if (!typeEl.value || !lv) continue;
+      const entry = findFlowerEntry(tier, typeKey, typeEl.value);
+      if (!entry) continue;
+      if (!combined[typeEl.value]) combined[typeEl.value] = { entry, total: 0 };
+      combined[typeEl.value].total += lv;
+    }
+  }
+
+  if (!Object.keys(combined).length) {
+    window.flowerTotals = {};
+    el.innerHTML = '';
+    computeImagoFactors();
+    renderImagoformPanel();
+    return;
+  }
+
+  // Look up value at combined level, accumulate by stat id
+  const totals = {};
+  for (const { entry, total } of Object.values(combined)) {
+    const idx = Math.min(total, entry.values.length) - 1;
+    if (idx < 0) continue;
+    const val = entry.values[idx];
+    if (!val) continue;
+    for (const id of (Array.isArray(entry.id) ? entry.id : [entry.id])) {
+      totals[id] = (totals[id] || 0) + val;
+    }
+  }
+
+  window.flowerTotals = totals;
+  computeImagoFactors();
+  renderImagoformPanel();
+
+  if (!Object.keys(totals).length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="stat-divider" style="margin-top:10px;"></div>
+    <div class="section-header" style="margin-top:8px;">Summary of Flower Stats</div>
+    <div class="flower-summary-grid">
+      ${Object.entries(totals).map(([id, val]) => {
+        const label = FLOWER_STAT_DISPLAY[id] || id;
+        const suffix = FLOWER_FLAT_IDS.has(id) ? '' : '%';
+        return `<div class="flower-sum-entry"><span class="flower-sum-label">${label}</span><span class="flower-sum-val">+${val.toFixed(2)}${suffix}</span></div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── Team Buffs (Support / Bulwark flowers from teammates) ────────────────────
+
+const TEAM_BUFF_SLOT_COUNT = 3;
+
+function buildTeamBuffOpts() {
+  const isUnity = s => s.label.includes('Unity');
+  const sections = [
+    { label: 'Main Stat',  pool: FLOWER_TYPES.support.mainStatPool.filter(isUnity) },
+    { label: 'Sub 2',      pool: FLOWER_SUB2_POOL.filter(s => s.type === 'support' && isUnity(s)) },
+  ];
+  return sections.map(({ label, pool }) => {
+    const opts = pool.map(s => `<option value="${s.label}">${s.label}</option>`).join('');
+    return `<optgroup label="${label}">${opts}</optgroup>`;
+  }).join('');
+}
+
+function findTeamBuffEntry(label) {
+  if (!label) return null;
+  for (const pool of [FLOWER_TYPES.support.mainStatPool, FLOWER_SUB2_POOL]) {
+    const e = pool.find(s => s.label === label);
+    if (e) return e;
+  }
+  return null;
+}
+
+function syncTeamBuffSelects() {
+  const selected = new Set();
+  for (let i = 0; i < TEAM_BUFF_SLOT_COUNT; i++) {
+    const v = document.getElementById(`tbuff-${i}-type`)?.value;
+    if (v) selected.add(v);
+  }
+  for (let i = 0; i < TEAM_BUFF_SLOT_COUNT; i++) {
+    const sel = document.getElementById(`tbuff-${i}-type`);
+    if (!sel) continue;
+    const own = sel.value;
+    for (const opt of sel.options) {
+      if (!opt.value) continue;
+      opt.disabled = opt.value !== own && selected.has(opt.value);
+    }
+  }
+}
+
+function updateTeamBuffLevelSelect(i) {
+  const typeEl = document.getElementById(`tbuff-${i}-type`);
+  const lvEl   = document.getElementById(`tbuff-${i}-lv`);
+  if (!typeEl || !lvEl) return;
+  const entry = findTeamBuffEntry(typeEl.value);
+  if (!entry) {
+    lvEl.innerHTML = '<option value="">—</option>';
+    lvEl.disabled = true;
+    return;
+  }
+  lvEl.disabled = false;
+  const prevLv = parseInt(lvEl.value) || 0;
+  lvEl.innerHTML = '<option value="">—</option>' +
+    entry.values.map((v, idx) => {
+      const lv = idx + 1;
+      return `<option value="${lv}"${lv === prevLv ? ' selected' : ''}>Lv ${lv}  (+${v})</option>`;
+    }).join('');
+}
+
+function renderTeamBuffPanel() {
+  const opts = buildTeamBuffOpts();
+  document.getElementById('team-buff-rows').innerHTML =
+    Array.from({ length: TEAM_BUFF_SLOT_COUNT }, (_, i) => `
+      <div class="team-buff-row">
+        <div class="flower-stat-label">Buff ${i + 1}</div>
+        <select class="flower-select" id="tbuff-${i}-type"
+          oninput="updateTeamBuffLevelSelect(${i});syncTeamBuffSelects();updateLive()">
+          <option value="">—</option>
+          ${opts}
+        </select>
+        <select class="flower-lv-select" id="tbuff-${i}-lv"
+          disabled oninput="updateLive()">
+          <option value="">—</option>
+        </select>
+      </div>`).join('');
+}
+
+function renderTeamBuffSummary() {
+  const el = document.getElementById('team-buff-summary');
+  const totals = {};
+  for (let i = 0; i < TEAM_BUFF_SLOT_COUNT; i++) {
+    const typeEl = document.getElementById(`tbuff-${i}-type`);
+    const lvEl   = document.getElementById(`tbuff-${i}-lv`);
+    if (!typeEl || !lvEl) continue;
+    const lv = parseInt(lvEl.value) || 0;
+    if (!typeEl.value || !lv) continue;
+    const entry = findTeamBuffEntry(typeEl.value);
+    if (!entry) continue;
+    const val = entry.values[lv - 1];
+    if (!val) continue;
+    for (const id of (Array.isArray(entry.id) ? entry.id : [entry.id])) {
+      totals[id] = (totals[id] || 0) + val;
+    }
+  }
+
+  window.teamBuffTotals = totals;
+  if (!Object.keys(totals).length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = `
+    <div class="stat-divider" style="margin-top:10px;"></div>
+    <div class="section-header" style="margin-top:8px;">Summary of Team Buffs</div>
+    <div class="flower-summary-grid">
+      ${Object.entries(totals).map(([id, val]) => {
+        const label = FLOWER_STAT_DISPLAY[id] || id;
+        const suffix = FLOWER_FLAT_IDS.has(id) ? '' : '%';
+        return `<div class="flower-sum-entry"><span class="flower-sum-label">${label}</span><span class="flower-sum-val">+${val.toFixed(2)}${suffix}</span></div>`;
+      }).join('')}
+    </div>`;
+}
+
 // ── Food Buff ─────────────────────────────────────────────────────────────────
 
 function populateFoodSelector() {
@@ -966,6 +1404,7 @@ function init() {
   populateDollSelector();
   populateCommonKeySelector();
   populateFoodSelector();
+  renderTeamBuffPanel();
   document.getElementById('vertebrae-select').value = 'v0';
   activeVertebrae = 'v0';
   onDollChange();         // also calls renderDollMechanics

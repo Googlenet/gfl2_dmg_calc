@@ -181,6 +181,41 @@ input[type="number"]:focus { border-color: var(--accent); box-shadow: var(--glow
 .ckey-slot-input { width: 100%; background: var(--panel-bg, #0d1520); border: 1px solid var(--border); border-radius: 3px; color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 12px; padding: 4px 6px; text-align: right; outline: none; box-sizing: border-box; }
 .ckey-slot-input:focus { border-color: var(--accent); }
 
+/* Remolding Pattern (Flower) grid */
+.flower-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.flower-slot { background: var(--panel2); border: 1px solid var(--border); border-radius: 4px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.flower-type-badge { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; text-align: center; padding: 3px 4px; border-radius: 2px; border: 1px solid; opacity: 0.85; }
+.flower-stat-row { display: flex; flex-direction: column; gap: 2px; }
+.flower-stat-label { font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); opacity: 0.7; }
+.flower-select { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 2px 0 3px; outline: none; cursor: pointer; }
+.flower-select option, .flower-select optgroup { background: #0d1520; color: var(--text-bright); }
+.flower-lv-select { width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 2px; color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 9px; padding: 3px 4px; outline: none; cursor: pointer; }
+.flower-lv-select:disabled { opacity: 0.35; cursor: default; }
+.flower-lv-select option { background: #0d1520; color: var(--text-bright); }
+.flower-lv-select:focus { border-color: var(--accent); }
+.flower-summary-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.team-buff-rows { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.team-buff-row { display: flex; flex-direction: column; gap: 4px; background: var(--panel2); border: 1px solid var(--border); border-radius: 4px; padding: 6px; }
+.imagoform-factor-row { display: flex; gap: 8px; flex-wrap: nowrap; margin-bottom: 10px; align-items: center; }
+.imagoform-factor-chip { display: flex; align-items: center; gap: 6px; background: var(--panel2); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; flex: 1; justify-content: space-between; }
+.imagoform-factor-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
+.imagoform-factor-val { font-family: 'Share Tech Mono', monospace; font-size: 16px; font-weight: 600; color: var(--text-bright); }
+.imagoform-tier-row { padding: 6px 8px; border-radius: 4px; margin-bottom: 4px; border: 1px solid var(--border); background: var(--panel2); transition: border-color 0.2s, background 0.2s; }
+.imagoform-tier-row.unlocked { border-color: rgba(45,212,191,0.3); }
+.imagoform-tier-row.active { border-color: var(--accent2); background: rgba(45,212,191,0.07); }
+.imagoform-tier-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.imagoform-tier-name { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
+.imagoform-tier-row.unlocked .imagoform-tier-name { color: var(--text-bright); }
+.imagoform-tier-reqs { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+.imagoform-tier-req { opacity: 0.5; }
+.imagoform-tier-req.met { opacity: 1; }
+.imagoform-tier-desc { font-size: 10px; color: var(--text-dim); margin-top: 5px; line-height: 1.4; font-family: 'Share Tech Mono', monospace; border-top: 1px solid rgba(30,58,95,0.4); padding-top: 5px; }
+.imagoform-tier-row.active .imagoform-tier-desc { color: var(--text); }
+
+.flower-sum-entry { background: var(--panel2); border: 1px solid var(--border); border-radius: 3px; padding: 4px 8px; display: flex; gap: 8px; align-items: center; }
+.flower-sum-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
+.flower-sum-val { font-family: 'Share Tech Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent2); }
+
 /* Skill profile panel */
 .profile-select { width: 100%; background: var(--panel2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-bright); font-family: 'Share Tech Mono', monospace; font-size: 13px; padding: 9px 12px; outline: none; cursor: pointer; transition: border-color 0.2s; }
 .profile-select:focus { border-color: var(--accent); }
