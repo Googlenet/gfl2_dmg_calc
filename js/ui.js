@@ -165,14 +165,7 @@ window.gunsmokeBuffState = {};
 getGunsmokeBuffList().forEach(b => { window.gunsmokeBuffState[b.id] = false; });
 
 function onGunsmokeBuffToggle(id) {
-  const buff  = getGunsmokeBuffById(id);
-  const wasOn = window.gunsmokeBuffState[id];
-  if (buff.group) {
-    getGunsmokeBuffList()
-      .filter(b => b.group === buff.group)
-      .forEach(b => { window.gunsmokeBuffState[b.id] = false; });
-  }
-  window.gunsmokeBuffState[id] = !wasOn;
+  window.gunsmokeBuffState[id] = !window.gunsmokeBuffState[id];
   renderGunsmokeBuffs();
   updateLive();
 }
@@ -298,7 +291,7 @@ function renderDollPassives() {
   panel.style.display = 'block';
 
   const mechHtml = activeDoll.passives.filter(mech =>
-    !mech.vertebrae || mech.vertebrae.includes(activeVertebrae)
+    !mech.vertebrae || mech.vertebrae.includes(parseVLevel(activeVertebrae))
   ).map(mech => {
     if (mech.type === 'stack_selector') {
       const active = window.dollMechState[mech.key] || 0;
@@ -405,7 +398,7 @@ function onVertebraeChange() {
   // Reset state for any passives that are no longer valid at this V level
   if (activeDoll?.passives) {
     activeDoll.passives.forEach(m => {
-      if (m.vertebrae && !m.vertebrae.includes(activeVertebrae)) {
+      if (m.vertebrae && !m.vertebrae.includes(parseVLevel(activeVertebrae))) {
         window.dollMechState[m.key] = m.type === 'stack_selector' ? 0 : false;
       }
     });
@@ -1470,7 +1463,7 @@ function onTeamSkillVertebraeChange(slot, vLevel) {
   // Reset skills that are no longer valid at this V level
   const doll = getDoll(state.dollId);
   doll?.supportSkills?.forEach(p => {
-    if (p.vertebrae && !p.vertebrae.includes(vLevel)) {
+    if (p.vertebrae && !p.vertebrae.includes(parseVLevel(vLevel))) {
       state.mechState[p.key] = p.type === 'stack_selector' ? 0 : false;
     }
   });
@@ -1512,7 +1505,7 @@ function renderTeamSkillSlot(slot) {
   let skillsHtml = '';
   if (doll?.supportSkills?.length) {
     const visible = doll.supportSkills.filter(p =>
-      !p.vertebrae || p.vertebrae.includes(state.vertebrae)
+      !p.vertebrae || p.vertebrae.includes(parseVLevel(state.vertebrae))
     );
     if (visible.length) {
       skillsHtml = visible.map(p => {

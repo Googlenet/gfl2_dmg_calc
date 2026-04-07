@@ -1,0 +1,255 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// peritya.js  —  Peritya doll data
+// ─────────────────────────────────────────────────────────────────────────────
+
+DOLLS.push({
+  id: 'peritya',
+  name: 'Peritya',
+  class: 'Sentinel',
+  ammoType: 'Heavy',
+  phase: 'Corrosion',
+  baseCritDmg: 120,   // update with actual base value when confirmed
+
+  skills: [
+
+    {
+      id: 'peritya_basic',
+      name: 'Rapid Overwrite',
+      phase_dmg_type: 'physical',
+      target_type:    'targeted',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Selects one enemy target within 8 tiles and deals Physical damage equal to 80% of attack to it.',
+      multiplier: 0.80,
+      vertebrae: null,
+      cooldown: null,
+      stability_dmg: 3,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    {
+      id: 'peritya_s1_lv1',
+      name: '(S1) Rapid Overwrite',
+      phase_dmg_type: 'corrosion',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Selects 1 enemy within 8 tiles, dealing AoE Corrosion damage equal to 85% of attack to the target and all enemies within a 3x3 area, and cleanses 1 buff.',
+      multiplier: 0.85,
+      vertebrae: [0],
+      cooldown: 2,
+      stability_dmg: 1,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    {
+      id: 'peritya_s1_lv2',
+      name: '(S1) Rapid Overwrite',
+      phase_dmg_type: 'corrosion',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Selects 1 enemy within 8 tiles, dealing AoE Corrosion damage equal to 85% of attack to the target and all enemies within a 3x3 area, and cleanses 3 buffs.',
+      multiplier: 0.85,
+      vertebrae: [1, 2, 3, 4, 5, 6],
+      cooldown: 2,
+      stability_dmg: 1,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    // s2 v0-v1
+    {
+      id: 'peritya_s2_lv1',
+      name: '(S2) Domain Suppression',
+      phase_dmg_type: 'physical',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Select a tile within 8 tiles as the center. Deal AoE Physical damage equal to 90% of attack to all enemy targets within 1 tile of the center and pull them 1 tile towards it. For each target hit, reduce this skill\'s cooldown by 1 turn.',
+      multiplier: 0.90,
+      vertebrae: [0, 1],
+      cooldown: 3,
+      stability_dmg: 3,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    // s2 v2-v6
+    {
+      id: 'peritya_s2_lv2',
+      name: '(S2) Domain Suppression',
+      phase_dmg_type: 'physical',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Select a tile within 8 tiles as the center. Deal AoE Physical damage equal to 90% of attack to all enemy targets within 2 tiles of the center and pull them 1 tile towards it. For each target hit, reduce this skill\'s cooldown by 1 turn.',
+      multiplier: 0.90,
+      vertebrae: [2, 3, 4, 5, 6],
+      cooldown: 3,
+      stability_dmg: 3,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    // ult v0-v2
+    {
+      id: 'peritya_ult_lv1',
+      name: '(Ult) Multi-Compilation',
+      phase_dmg_type: 'corrosion',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Deals AoE Corrosion damage equal to 100% of attack to all enemy targets within a 9×9 area centered on self, excluding the inner 5×5 area. For each target hit, increases damage dealt by 5%, up to 15%.',
+      multiplier: 1.00,
+      vertebrae: [0, 1, 2],
+      cooldown: null,
+      stability_dmg: 2,
+      confectance_cost: 6,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    // ult v3
+    {
+      id: 'peritya_ult_lv2',
+      name: '(Ult) Multi-Compilation',
+      phase_dmg_type: 'corrosion',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Deals AoE Corrosion damage equal to 100% of attack to all enemy targets within a 9×9 area centered on self, excluding the inner 5×5 area. For each target hit, increases damage dealt by 5%, up to 25%.',
+      multiplier: 1.00,
+      vertebrae: [3],
+      cooldown: null,
+      stability_dmg: 2,
+      confectance_cost: 6,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    // ult v4-v6
+    {
+      id: 'peritya_ult_lv3',
+      name: '(Ult) Multi-Compilation',
+      phase_dmg_type: 'corrosion',
+      target_type:    'aoe',
+      skill_type:     'active',
+      ammo_type:      'heavy',
+      description: 'Deals AoE Corrosion damage equal to 100% of attack to all enemy targets within a 9×9 area centered on self, excluding the inner 3×3 area. For each target hit, increases damage dealt by 5%, up to 25%.',
+      multiplier: 1.00,
+      vertebrae: [4, 5, 6],
+      cooldown: null,
+      stability_dmg: 2,
+      confectance_cost: 6,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    {
+      id: 'peritya_passive_lv1',
+      name: 'Chain Reaction',
+      phase_dmg_type: 'physical',
+      target_type:    'aoe',
+      skill_type:     'oot',
+      ammo_type:      'heavy',
+      description: 'When an enemy unit within range takes AoE damage from an allied unit, performs 1 instance of Support Action, dealing AoE Physical damage equal to 50% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. This effect can trigger up to 6 times per turn. Before the attack, every 1 point of leftover mobility enhances the damage dealt by the attack by 10%, up to a maximum increase of 30%.',
+      multiplier: 0.50,
+      vertebrae: [0, 1, 2, 3, 4],
+      cooldown: null,
+      stability_dmg: 1,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    {
+      id: 'peritya_passive_lv2',
+      name: 'Chain Reaction',
+      phase_dmg_type: 'physical',
+      target_type:    'aoe',
+      skill_type:     'oot',
+      ammo_type:      'heavy',
+      description: 'When an enemy unit within range takes AoE damage from an allied unit, performs 1 instance of Support Action, dealing AoE Physical damage equal to 50% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. This effect can trigger up to 6 times per turn. Before the attack, every 1 point of leftover mobility enhances the damage dealt by the attack by 10%, up to a maximum increase of 30%.\nIf no movement is made before an active attack, gain 2 points of Confectance Index after attacking.',
+      multiplier: 0.50,
+      vertebrae: [5],
+      cooldown: null,
+      stability_dmg: 1,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+    {
+      id: 'peritya_passive_lv3',
+      name: 'Chain Reaction',
+      phase_dmg_type: 'physical',
+      target_type:    'aoe',
+      skill_type:     'oot',
+      ammo_type:      'heavy',
+      description: 'When an enemy unit within range takes AoE damage from an allied unit, performs 1 instance of Support Action, dealing AoE Physical damage equal to 50% of attack and 1 point of stability damage, as well as gaining 1 point of Confectance Index. This effect can trigger up to 10 times per turn. Before the attack, every 1 point of leftover mobility enhances the damage dealt by the attack by 10%, up to a maximum increase of 30%.\nIf no movement is made before an active attack, gain 2 points of Confectance Index after attacking.',
+      multiplier: 0.50,
+      vertebrae: [6],
+      cooldown: null,
+      stability_dmg: 1,
+      confectance_cost: null,
+      canCrit: true,
+      scalingStat: 'ATK',
+    },
+
+  ],
+
+  passives: [
+
+    {
+      type: 'stack_selector',
+      key: 'chain_reaction',
+      label: 'Chain Reaction',
+      max: 3,
+      effect: (stacks) => ({ dmgPct: stacks * 10 }),
+      vertebrae: null,
+      notes: '+10% DMG per stack of leftover mobility.',
+    },
+
+    {
+      type: 'toggle',
+      key: 'fk4_domain',
+      label: 'FK4 - Lazy Resistance',
+      effect: { dmgPct: 15 },
+      vertebrae: null,
+      notes: '+15% DMG to targets immune to displacement effects.',
+    },
+
+    {
+      type: 'stack_selector',
+      key: 'ult',
+      label: 'Multi-Compilation',
+      max: 3,
+      effect: (stacks) => ({ dmgPct: stacks * 5 }),
+      vertebrae: [0, 1, 2],
+      notes: '+5% DMG per enemy hit, up to 15%.',
+    },
+
+    {
+      type: 'stack_selector',
+      key: 'ult',
+      label: 'Multi-Compilation',
+      max: 5,
+      effect: (stacks) => ({ dmgPct: stacks * 5 }),
+      vertebrae: [3, 4, 5, 6],
+      notes: '+5% DMG per enemy hit, up to 25%.',
+    },
+
+  ],
+
+  flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'vanguard', 'vanguard', 'bulwark'],
+  supportSkills: [],
+
+});

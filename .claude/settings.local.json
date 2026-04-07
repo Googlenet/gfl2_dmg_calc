@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl -i -pe \"s/'v\\([0-6]\\)'/\\\\$1/g\" leva.js klukai.js mechty.js lind.js peritya.js)"
+    ]
+  }
+}

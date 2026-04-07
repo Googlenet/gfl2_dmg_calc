@@ -44,12 +44,14 @@ function getIchorFlatATK() {
 
 // Gunsmoke — sums all active milestone buff toggles
 function getGunsmokeResult() {
-  const out = { atkPct: 0, dmgPct: 0 };
+  const out = { atkPct: 0, dmgPct: 0, aoeDmgPct: 0, targetDmgPct: 0 };
   if (!window.gunsmokeBuffState) return out;
   for (const b of getGunsmokeBuffList()) {
     if (!window.gunsmokeBuffState[b.id] || !b.buff) continue;
-    out.atkPct += b.buff.atkPct || 0;
-    out.dmgPct += b.buff.dmgPct || 0;
+    out.atkPct       += b.buff.atkPct       || 0;
+    out.dmgPct       += b.buff.dmgPct       || 0;
+    out.aoeDmgPct    += b.buff.aoeDmgPct    || 0;
+    out.targetDmgPct += b.buff.targetDmgPct || 0;
   }
   return out;
 }
@@ -230,7 +232,12 @@ function getDmgMult() {
     if (!state) continue;
     sum += state === 'I' ? b.valI : b.valII;
   }
-  sum += getGunsmokeResult().dmgPct;
+  const gsResult = getGunsmokeResult();
+  const isAoe    = activeSkill?.target_type === 'aoe';
+  const isTarget = activeSkill?.target_type === 'targeted';
+  sum += gsResult.dmgPct;
+  if (isAoe)    sum += gsResult.aoeDmgPct;
+  if (isTarget) sum += gsResult.targetDmgPct;
   sum += getDollPassivesResult().dmgPct;
   sum += getActiveFoodBuff().dmgPct || 0;
   sum += getCommonKeyEffectResult().dmgPct;
@@ -276,7 +283,7 @@ function getDollPassivesResult() {
   // Collect all raw effect key/value pairs from active passives
   const raw = {};
   for (const p of activeDoll.passives) {
-    if (p.vertebrae && !p.vertebrae.includes(activeVertebrae)) continue;
+    if (p.vertebrae && !p.vertebrae.includes(parseVLevel(activeVertebrae))) continue;
     let eff = {};
     if (p.type === 'stack_selector') {
       const stacks = window.dollMechState[p.key] || 0;
@@ -354,10 +361,11 @@ function getTeamSkillResult() {
     const doll = getDoll(slot.dollId);
     if (!doll?.supportSkills?.length) continue;
     const vLevel = slot.vertebrae || 'v0';
+    const vNum = parseVLevel(vLevel);
 
     const raw = {};
     for (const p of doll.supportSkills) {
-      if (p.vertebrae && !p.vertebrae.includes(vLevel)) continue;
+      if (p.vertebrae && !p.vertebrae.includes(vNum)) continue;
       let eff = {};
       if (p.type === 'stack_selector') {
         const stacks = slot.mechState?.[p.key] || 0;

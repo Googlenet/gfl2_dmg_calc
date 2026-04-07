@@ -24,8 +24,7 @@ const GUNSMOKE_BUFFS = [
   {
     id:          'gs_1_2',
     label:       '1.2 — +15% ATK/HP/DEF Boost',
-    description: 'Platoon milestone 1.2. ATK, HP, and DEF increased by 15%. Mutually exclusive with 7.1.',
-    group:       'atk_boost',
+    description: 'Platoon milestone 1.2. ATK, HP, and DEF increased by 15%.',
     buff: { atkPct: 15 },
   },
 
@@ -33,21 +32,20 @@ const GUNSMOKE_BUFFS = [
     id:          'gs_3_1',
     label:       '3.1 — +30% AoE DMG Boost',
     description: 'Platoon milestone 3.1. AoE damage dealt increased by 30%.',
-    buff: { dmgPct: 30 },
+    buff: { aoeDmgPct: 30 },
   },
 
   {
     id:          'gs_5_1',
     label:       '5.1 — +30% Targeted DMG Boost',
     description: 'Platoon milestone 5.1. Targeted (single-target) damage dealt increased by 30%.',
-    buff: { dmgPct: 30 },
+    buff: { targetDmgPct: 30 },
   },
 
   {
     id:          'gs_7_1',
     label:       '7.1 — +25% ATK/HP/DEF Boost',
-    description: 'Platoon milestone 7.1. ATK, HP, and DEF increased by 25%. Mutually exclusive with 1.2.',
-    group:       'atk_boost',
+    description: 'Platoon milestone 7.1. ATK, HP, and DEF increased by 25%.',
     buff: { atkPct: 25 },
   },
 
