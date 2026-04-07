@@ -128,6 +128,19 @@
     <div id="team-buff-summary"></div>
   </div>
 
+  <!-- ── Team Skills ── -->
+  <div class="panel" style="margin-bottom:14px;border-color:var(--def-color);">
+    <div class="corner-deco"></div>
+    <div class="panel-label" style="color:var(--def-color);">Team Skills</div>
+    <div style="font-size:10px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-bottom:10px;">
+      Buffs &amp; debuffs applied by teammates. Select up to 4 dolls and configure their active support skills.
+    </div>
+    <div id="tskill-slot-0" style="padding-bottom:10px;border-bottom:1px solid rgba(30,58,95,0.6);margin-bottom:10px;"></div>
+    <div id="tskill-slot-1" style="padding-bottom:10px;border-bottom:1px solid rgba(30,58,95,0.6);margin-bottom:10px;"></div>
+    <div id="tskill-slot-2" style="padding-bottom:10px;border-bottom:1px solid rgba(30,58,95,0.6);margin-bottom:10px;"></div>
+    <div id="tskill-slot-3"></div>
+  </div>
+
   <!-- ── Attack Stats ── -->
   <div class="panel atk-panel" style="margin-bottom:14px;">
     <div class="corner-deco"></div>
@@ -189,6 +202,7 @@
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-row"><span class="stat-label">Remolding ATK %</span><div class="stat-input"><input type="number" id="atk_remold_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row" id="flower-atk-pct-row" style="display:none;"><span class="stat-label">Flower ATK %</span><div class="stat-input"><span id="flower-atk-pct-display" style="color:var(--atk-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from flowers</div></div></div>
+    <div class="stat-row" id="tskill-atk-pct-row" style="display:none;"><span class="stat-label">Team Skill ATK %</span><div class="stat-input"><span id="tskill-atk-pct-display" style="color:var(--atk-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from team skills</div></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys ATK % Buff</span><div class="stat-input"><input type="number" id="battle_fixedkey_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Skill-based ATK % Buff</span><div class="stat-input"><input type="number" id="battle_skill_pct" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Food ATK %</span><div class="stat-input"><span id="food-atk-pct-display" style="color:var(--atk-color); font-weight:600; padding:0 8px;">+0%</span><div class="suf">from food selection</div></div></div>
@@ -240,7 +254,8 @@
     <div class="stat-divider" style="margin-top:8px;"></div>
     <div class="stat-row"><span class="stat-label">Weapon Traits %</span><div class="stat-input"><input type="number" id="def_weapon_trait" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Skill-based DEF% Buff</span><div class="stat-input"><input type="number" id="def_skill_debuff" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" id="passive-def-reduc-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--crit);">Doll Passive DEF %</span><div class="stat-input"><span id="passive-def-reduc-display" style="color:var(--crit);font-weight:600;padding:0 8px;">-0%</span><div class="suf">from passives</div></div></div>
+    <div class="stat-row" id="passive-def-reduc-row" style="display:none;"><span class="stat-label" style="color:var(--crit);">Doll Passive DEF %</span><div class="stat-input"><span id="passive-def-reduc-display" style="color:var(--crit);font-weight:600;padding:0 8px;">-0%</span><div class="suf">from passives</div></div></div>
+    <div class="stat-row" id="tskill-def-reduc-row" style="display:none;border-bottom:none;"><span class="stat-label" style="color:var(--def-color);">Team Skill DEF %</span><div class="stat-input"><span id="tskill-def-reduc-display" style="color:var(--def-color);font-weight:600;padding:0 8px;">-0%</span><div class="suf">from team skills</div></div></div>
     <div class="stat-divider"></div>
     <div class="stat-total-row">
       <span class="stat-total-label">Total DEF Reduction</span>
@@ -265,7 +280,8 @@
     <div class="stat-row"><span class="stat-label">Common Keys</span><div class="stat-input"><input type="number" id="dmg_common_keys" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Fixed Keys</span><div class="stat-input"><input type="number" id="dmg_fixed_keys" value="0" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Remolding</span><div class="stat-input"><input type="number" id="dmg_remolding" value="0" min="0" oninput="updateLive()"></div></div>
-    <div class="stat-row" id="flower-dmg-pct-row" style="display:none;border-bottom:none;"><span class="stat-label">Flower DMG %</span><div class="stat-input"><span id="flower-dmg-pct-display" style="color:var(--dmg-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from flowers</div></div></div>
+    <div class="stat-row" id="flower-dmg-pct-row" style="display:none;"><span class="stat-label">Flower DMG %</span><div class="stat-input"><span id="flower-dmg-pct-display" style="color:var(--dmg-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from flowers</div></div></div>
+    <div class="stat-row" id="tskill-dmg-pct-row" style="display:none;border-bottom:none;"><span class="stat-label">Team Skill DMG %</span><div class="stat-input"><span id="tskill-dmg-pct-display" style="color:var(--dmg-color);font-weight:600;padding:0 8px;">+0%</span><div class="suf">from team skills</div></div></div>
 
     <div class="stat-divider" style="margin-top:12px;"></div>
 
@@ -310,6 +326,14 @@
     <div id="flower-crit-rate-row" class="stat-total-row" style="display:none; padding-top:2px;">
       <span class="stat-total-label" style="font-size:9px;">Flower Crit Rate</span>
       <span class="stat-total-val" id="flower-crit-rate-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
+    </div>
+    <div id="tskill-crit-dmg-row" class="stat-total-row" style="display:none; padding-top:2px;">
+      <span class="stat-total-label" style="font-size:9px;">Team Skill Crit DMG</span>
+      <span class="stat-total-val" id="tskill-crit-dmg-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
+    </div>
+    <div id="tskill-crit-rate-row" class="stat-total-row" style="display:none; padding-top:2px;">
+      <span class="stat-total-label" style="font-size:9px;">Team Skill Crit Rate</span>
+      <span class="stat-total-val" id="tskill-crit-rate-display" style="color:var(--crit); font-size:13px; opacity:0.7;"></span>
     </div>
     <div class="stat-total-row" style="padding-top:4px;">
       <span class="stat-total-label">Effective Crit DMG %</span>

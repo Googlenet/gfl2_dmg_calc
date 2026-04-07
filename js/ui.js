@@ -305,7 +305,7 @@ function renderDollPassives() {
       const eff    = active > 0 ? mech.effect(active) : {};
       const badges = Object.entries(eff)
         .filter(([, v]) => v)
-        .map(([k, v]) => { const suf = (k.endsWith('Pct')||k.endsWith('CritDmg')||k==='critDmg'||k==='critRate') ? '%' : (k.endsWith('Multiplier') ? '×' : ''); return `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(255,170,0,0.15);color:var(--crit);">${k} +${v}${suf}</span>`; })
+        .map(([k, v]) => `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(255,170,0,0.15);color:var(--crit);">${k} ${effectSign(k)}${v}${effectSuf(k)}</span>`)
         .join('');
       const buttons = Array.from({length: mech.max}, (_, i) => {
         const n = i + 1;
@@ -520,12 +520,33 @@ function renderSkillCard() {
     ? makeBadge(activeSkill.ammo_type, 'rgba(255,107,107,0.1)', 'var(--atk-color)') : '';
 
   let multSection = '';
-  if (activeSkill.scalingType === 'stack_bonus' && !activeSkill.multiHit) {
+  if (activeSkill.scalingType === 'stack_bonus') {
     const rate     = activeSkill.stackRate ?? 0;
     const maxStack = activeSkill.stackMax  ?? 0;
     const stacks   = activeStackBonusStacks;
+    const scaleStat = activeSkill.scalingStat ?? 'ATK';
+    const baseTotal = Array.isArray(activeSkill.multiplier)
+      ? activeSkill.multiplier.reduce((s, h) => s + h.value, 0)
+      : 0;
+    const combined  = baseTotal + stacks * rate / 100;
+    const hitRows = activeSkill.multiHit && Array.isArray(activeSkill.multiplier)
+      ? `<table class="atk-buff-table" style="margin-top:0;margin-bottom:8px;">
+          <tbody>
+            ${activeSkill.multiplier.map(hit => `
+              <tr class="atk-buff-row">
+                <td class="atk-buff-name">${hit.label}</td>
+                <td class="atk-buff-name" style="color:var(--atk-color);text-align:right;padding-right:8px;">${(hit.value * 100).toFixed(0)}% ${scaleStat}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`
+      : '';
+    const dispText = baseTotal > 0
+      ? `Combined: ${(baseTotal * 100).toFixed(0)}% + ${stacks}×${rate}% = ${(combined * 100).toFixed(0)}% ${scaleStat}`
+      : `Effective multiplier: ${stacks}×${rate}% = ${stacks * rate}% ${scaleStat}`;
     multSection = `
       <div style="margin-top:10px;">
+        ${activeSkill.multiHit ? '<div class="skill-card-name" style="margin-bottom:6px;">Multi-Hit</div>' : ''}
+        ${hitRows}
         <div class="skill-card-name" style="margin-bottom:6px;">${activeSkill.stackLabel ?? 'Stacks'} (max ${maxStack})</div>
         <div class="stat-row" style="border-bottom:none;margin:0;">
           <span class="stat-label" style="font-size:11px;">Stacks on target</span>
@@ -537,7 +558,7 @@ function renderSkillCard() {
           </div>
         </div>
         <div class="skill-card-mult" style="margin-top:8px;" id="stack-bonus-display">
-          Effective multiplier: ${stacks}×${rate}% = ${stacks * rate}% ${activeSkill.scalingStat ?? 'ATK'}
+          ${dispText}
         </div>
       </div>`;
   } else if (activeSkill.scalingType === 'stability_overflow') {
@@ -674,7 +695,7 @@ function updateLive() {
   renderFlowerSummary();
   renderTeamBuffSummary();
 
-  const mech = getDollMechanicsResult();
+  const mech = getDollPassivesResult();
 
   // ATK
   const totalFlat      = getFlatATKSources();
@@ -792,6 +813,24 @@ function updateLive() {
   if (flower.dmgPct  > 0) document.getElementById('flower-dmg-pct-display').textContent = `+${flower.dmgPct.toFixed(2)}%`;
   if (flower.critDmg  > 0) document.getElementById('flower-crit-dmg-display').textContent  = `+${flower.critDmg.toFixed(2)}%`;
   if (flower.critRate > 0) document.getElementById('flower-crit-rate-display').textContent = `+${flower.critRate.toFixed(2)}%`;
+
+  // Team skill display rows
+  const ts = getTeamSkillResult();
+  const tsAtkRow      = document.getElementById('tskill-atk-pct-row');
+  const tsDefRow      = document.getElementById('tskill-def-reduc-row');
+  const tsDmgRow      = document.getElementById('tskill-dmg-pct-row');
+  const tsCritDmgRow  = document.getElementById('tskill-crit-dmg-row');
+  const tsCritRateRow = document.getElementById('tskill-crit-rate-row');
+  if (tsAtkRow)      tsAtkRow.style.display      = ts.atkPct      > 0 ? '' : 'none';
+  if (tsDefRow)      tsDefRow.style.display      = ts.defReducPct > 0 ? '' : 'none';
+  if (tsDmgRow)      tsDmgRow.style.display      = ts.dmgPct      > 0 ? '' : 'none';
+  if (tsCritDmgRow)  tsCritDmgRow.style.display  = ts.critDmg     > 0 ? '' : 'none';
+  if (tsCritRateRow) tsCritRateRow.style.display = ts.critRate    > 0 ? '' : 'none';
+  if (ts.atkPct      > 0) document.getElementById('tskill-atk-pct-display').textContent      = `+${ts.atkPct.toFixed(2)}%`;
+  if (ts.defReducPct > 0) document.getElementById('tskill-def-reduc-display').textContent    = `-${ts.defReducPct.toFixed(0)}%`;
+  if (ts.dmgPct      > 0) document.getElementById('tskill-dmg-pct-display').textContent      = `+${ts.dmgPct.toFixed(2)}%`;
+  if (ts.critDmg     > 0) document.getElementById('tskill-crit-dmg-display').textContent     = `+${ts.critDmg.toFixed(2)}%`;
+  if (ts.critRate    > 0) document.getElementById('tskill-crit-rate-display').textContent    = `+${ts.critRate.toFixed(2)}%`;
 
   // Weakness
   const a = document.getElementById('ammoWeak')?.checked ? 1 : 0;
@@ -1394,6 +1433,169 @@ function onFoodChange() {
   updateLive();
 }
 
+// ── Team Skills Panel ─────────────────────────────────────────────────────────
+
+const TEAM_SKILL_SLOT_COUNT = 4;
+const VERTEBRAE_OPTS = ['v0','v1','v2','v3','v4','v5','v6'];
+
+// Keys where the value is a reduction (displayed as negative)
+const REDUCTION_EFFECT_KEYS = new Set(['defReducPct', 'defReduc']);
+function effectSign(key) { return REDUCTION_EFFECT_KEYS.has(key) ? '-' : '+'; }
+function effectSuf(key)  { return (key.endsWith('Pct') || key.endsWith('CritDmg') || key === 'critDmg' || key === 'critRate') ? '%' : (key.endsWith('Multiplier') ? '×' : ''); }
+
+window.teamSkillState = Array.from({ length: TEAM_SKILL_SLOT_COUNT }, () => ({
+  dollId:    null,
+  vertebrae: 'v0',
+  mechState: {},
+}));
+
+function onTeamSkillDollChange(slot, dollId) {
+  const state = window.teamSkillState[slot];
+  state.dollId    = dollId || null;
+  state.vertebrae = 'v0';
+  state.mechState = {};
+  if (dollId) {
+    const doll = getDoll(dollId);
+    doll?.supportSkills?.forEach(p => {
+      state.mechState[p.key] = p.type === 'stack_selector' ? 0 : false;
+    });
+  }
+  renderTeamSkillSlot(slot);
+  updateLive();
+}
+
+function onTeamSkillVertebraeChange(slot, vLevel) {
+  const state = window.teamSkillState[slot];
+  state.vertebrae = vLevel;
+  // Reset skills that are no longer valid at this V level
+  const doll = getDoll(state.dollId);
+  doll?.supportSkills?.forEach(p => {
+    if (p.vertebrae && !p.vertebrae.includes(vLevel)) {
+      state.mechState[p.key] = p.type === 'stack_selector' ? 0 : false;
+    }
+  });
+  renderTeamSkillSlot(slot);
+  updateLive();
+}
+
+function onTeamSkillToggle(slot, key) {
+  window.teamSkillState[slot].mechState[key] = !window.teamSkillState[slot].mechState[key];
+  renderTeamSkillSlot(slot);
+  updateLive();
+}
+
+function onTeamSkillStack(slot, key, val) {
+  window.teamSkillState[slot].mechState[key] =
+    window.teamSkillState[slot].mechState[key] === val ? 0 : val;
+  renderTeamSkillSlot(slot);
+  updateLive();
+}
+
+function renderTeamSkillSlot(slot) {
+  const container = document.getElementById(`tskill-slot-${slot}`);
+  if (!container) return;
+
+  const state = window.teamSkillState[slot];
+  const doll  = state.dollId ? getDoll(state.dollId) : null;
+
+  // Doll + V-level selectors row
+  const dollOpts = `<option value="">— None —</option>` +
+    getDollList().map(d =>
+      `<option value="${d.id}"${state.dollId === d.id ? ' selected' : ''}>${d.name}</option>`
+    ).join('');
+
+  const vOpts = VERTEBRAE_OPTS.map(v =>
+    `<option value="${v}"${state.vertebrae === v ? ' selected' : ''}>${v.toUpperCase()}</option>`
+  ).join('');
+
+  // Support skill controls (only visible skills for current V level)
+  let skillsHtml = '';
+  if (doll?.supportSkills?.length) {
+    const visible = doll.supportSkills.filter(p =>
+      !p.vertebrae || p.vertebrae.includes(state.vertebrae)
+    );
+    if (visible.length) {
+      skillsHtml = visible.map(p => {
+        if (p.type === 'stack_selector') {
+          const active = state.mechState[p.key] || 0;
+          const eff    = active > 0 ? p.effect(active) : {};
+          const badges = Object.entries(eff)
+            .filter(([, v]) => v)
+            .map(([k, v]) =>
+              `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(99,179,237,0.15);color:var(--def-color);">${k} ${effectSign(k)}${v}${effectSuf(k)}</span>`
+            ).join('');
+          const buttons = Array.from({ length: p.max }, (_, i) => {
+            const n = i + 1;
+            const on = active === n;
+            return `<button type="button" onclick="onTeamSkillStack(${slot},'${p.key}',${n})"
+              style="padding:3px 8px;font-family:'Share Tech Mono',monospace;font-size:11px;
+                     background:${on ? 'rgba(99,179,237,0.2)' : 'var(--panel2)'};
+                     border:1px solid ${on ? 'var(--def-color)' : 'var(--border)'};
+                     color:${on ? 'var(--def-color)' : 'var(--text-dim)'};
+                     border-radius:3px;cursor:pointer;margin-right:3px;">${n}</button>`;
+          }).join('');
+          return `
+            <div style="padding:6px 0;border-bottom:1px solid rgba(30,58,95,0.4);">
+              <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-bright);margin-bottom:5px;">
+                ${p.label}${badges}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:0;">
+                <button type="button" onclick="onTeamSkillStack(${slot},'${p.key}',0)"
+                  style="padding:3px 8px;font-family:'Share Tech Mono',monospace;font-size:11px;
+                         background:${active === 0 ? 'rgba(99,179,237,0.2)' : 'var(--panel2)'};
+                         border:1px solid ${active === 0 ? 'var(--def-color)' : 'var(--border)'};
+                         color:${active === 0 ? 'var(--def-color)' : 'var(--text-dim)'};
+                         border-radius:3px;cursor:pointer;margin-right:3px;">0</button>
+                ${buttons}
+              </div>
+              ${p.notes ? `<div style="font-size:10px;color:var(--text-dim);margin-top:4px;font-family:'Share Tech Mono',monospace;">${p.notes}</div>` : ''}
+            </div>`;
+        } else if (p.type === 'toggle') {
+          const on = !!state.mechState[p.key];
+          const badge = on
+            ? Object.entries(p.effect).filter(([,v]) => v).map(([k,v]) =>
+                `<span style="font-size:10px;padding:1px 5px;border-radius:3px;margin-left:4px;background:rgba(99,179,237,0.15);color:var(--def-color);">${k} ${effectSign(k)}${v}${effectSuf(k)}</span>`
+              ).join('')
+            : '';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(30,58,95,0.4);gap:10px;">
+              <div>
+                <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text-bright);">${p.label}${badge}</div>
+                ${p.notes ? `<div style="font-size:10px;color:var(--text-dim);margin-top:2px;font-family:'Share Tech Mono',monospace;">${p.notes}</div>` : ''}
+              </div>
+              <input type="checkbox" class="atk-cb" ${on ? 'checked' : ''} onchange="onTeamSkillToggle(${slot},'${p.key}')" style="flex-shrink:0;">
+            </div>`;
+        }
+        return '';
+      }).join('');
+    } else {
+      skillsHtml = `<div style="font-size:11px;color:var(--text-dim);padding:6px 0;font-family:'Share Tech Mono',monospace;">No support skills at ${state.vertebrae.toUpperCase()}.</div>`;
+    }
+  } else if (doll) {
+    skillsHtml = `<div style="font-size:11px;color:var(--text-dim);padding:6px 0;font-family:'Share Tech Mono',monospace;">No support skills defined for ${doll.name}.</div>`;
+  }
+
+  container.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:${skillsHtml ? '8px' : '0'};">
+      <select class="flower-select" style="flex:1;"
+        onchange="onTeamSkillDollChange(${slot}, this.value)">
+        ${dollOpts}
+      </select>
+      <select class="flower-lv-select" style="width:52px;"
+        onchange="onTeamSkillVertebraeChange(${slot}, this.value)"
+        ${!state.dollId ? 'disabled' : ''}>
+        ${vOpts}
+      </select>
+    </div>
+    ${skillsHtml}`;
+}
+
+function renderTeamSkillPanel() {
+  for (let i = 0; i < TEAM_SKILL_SLOT_COUNT; i++) {
+    renderTeamSkillSlot(i);
+  }
+}
+
 function init() {
   renderAtkBuffs();
   renderIchorSelector();
@@ -1405,6 +1607,7 @@ function init() {
   populateCommonKeySelector();
   populateFoodSelector();
   renderTeamBuffPanel();
+  renderTeamSkillPanel();
   document.getElementById('vertebrae-select').value = 'v0';
   activeVertebrae = 'v0';
   onDollChange();         // also calls renderDollMechanics

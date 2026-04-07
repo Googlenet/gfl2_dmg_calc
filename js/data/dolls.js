@@ -494,6 +494,7 @@ const DOLLS = [
     ],
 
     flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'sentinel', 'vanguard', 'vanguard'],
+    supportSkills: [],
     notes: 'Electric Sentinel. Core mechanics: Superconductive Code stacks (0–4), Voltage Tiles, Negative Charge conditional bonuses.',
   },
 
@@ -558,6 +559,10 @@ const DOLLS = [
           { label: 'Hit 2', value: 0.60 },
         ],
         multiHit: true,
+        scalingType:  'stack_bonus',
+        stackLabel:   'Corrosive Infusion Stacks',
+        stackRate:    5,
+        stackMax:     15,
         vertebrae: ['v4', 'v5', 'v6'],
         cooldown: null,
         stability_dmg: 3,
@@ -796,8 +801,38 @@ const DOLLS = [
         notes: '-1% DEF per stack.',
       },
 
+      {
+        type: 'toggle',
+        key: 'toxic_infiltration_lv3',
+        label: 'Toxic Infiltration',
+        condition: 'At the end of the action, gains 1 stack of Corrosive Infusion for 2 turns. Additionally, the applier inflicts Toxic Infiltration for 2 turns to all enemies within 4 tiles who do not have Toxic Infiltration. Upon death, the applier inflicts Toxic Infiltration for 2 turns to all allies within 4 tiles centered on the unit with this effect, dealing AoE Corrosion damage equal to 80% of attack.\nWhen attacked by Klukai\'s active attacks, increases damage taken by 30%. This effect is removed after the applier is killed. Considered a Corrosion debuff.',
+        effect: { activeDmgPct: 30 },
+        vertebrae: ['v5', 'v6'],
+        notes: '+30% dmg from active attacks from Klukai.'
+      },
+      
     ],
     flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'sentinel', 'vanguard', 'bulwark'],
+    supportSkills: [
+      {
+        key:      'klukai_ci_lv1_team',
+        label:    'Corrosive Infusion',
+        type:     'stack_selector',
+        max:      10,
+        effect:   (stacks) => ({ defReducPct: stacks * 1 }),
+        notes:    '-1% DEF per stack on enemy target.',
+        vertebrae: ['v0', 'v1'],
+      },
+      {
+        key:      'klukai_ci_lv2_team',
+        label:    'Corrosive Infusion',
+        type:     'stack_selector',
+        max:      15,
+        effect:   (stacks) => ({ defReducPct: stacks * 1 }),
+        notes:    '-1% DEF per stack on enemy target.',
+        vertebrae: ['v2', 'v3', 'v4', 'v5', 'v6'],
+      },
+    ],
 
     // Thresholds from screenshot (Imago Factor totals required per type)
     imagoform: [
@@ -810,6 +845,201 @@ const DOLLS = [
     ],
 
     notes: '',
+   },
+
+   {
+    id: 'mechty',
+    name: 'Mechty',
+    class: 'Support',
+    ammoType: 'Medium',
+    phase: 'Corrosion',
+    baseCritDmg: 120,   // update with actual base value when confirmed
+
+    skills: [
+
+      {
+        id: 'mechty_basic',
+        name: 'Bedtime Warmup',
+        phase_dmg_type: 'physical',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      'medium',
+        description: 'Selects one enemy target within 8 tiles and deals Physical damage equal to 80% of attack to it.',
+        multiplier: 0.80,
+        vertebrae: null,
+        cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+    ],
+    passives: '',
+    flowerSlots: ['support', 'support', 'support', 'bulwark', 'bulwark', 'sentinel'],
+    supportSkills: [
+
+      {
+        key:      'toxic_inundation',
+        label:    'Toxic Inundation',
+        type:     'toggle',
+        condition: 'Applied by Mechty?',
+        effect:   { corroDmgPct: 25 },
+        notes:    'Corrosion Damage taken is increased by 25%. Considered a Corrosion defense debuff.',
+        vertebrae: null,
+      },
+
+      {
+        key:      'nightmare_form_lv1',
+        label:    'Nightmare Form',
+        type:     'toggle',
+        condition: 'Applied by Mechty?',
+        effect:   { aoeDmgPct: 10, aoeDmgSupPct: 50 },
+        notes:    'AoE damage dealt is increased by 10% and AoE damage dealt by Support Attacks is increased by 50%. Additionally, AoE Support Attack\'s damage type is changed to Corrosion damage. Considered a Corrosion buff, cannot be cleansed.',
+        vertebrae: ['v0', 'v1', 'v2', 'v3', 'v4', 'v5'],
+      },
+
+      {
+        key:      'nightmare_form_lv2',
+        label:    'Nightmare Form',
+        type:     'toggle',
+        condition: 'Applied by Mechty?',
+        effect:   { aoeDmgPct: 20, aoeDmgSupPct: 80 },
+        notes: 'AoE damage dealt is increased by 20%, AoE damage dealt by Support Attacks is increased by 80%, and stability damage deal is increased by 1 point. Additionally, AoE Support Attack\'s damage type is changed to Corrosion damage. Considered a Corrosion buff, cannot be cleansed.',
+        vertebrae: ['v6'],
+      },
+
+      {
+        key:      'dream_guardian',
+        label:    'Dream Guardian',
+        type:     'toggle',
+        condition: 'Applied by Mechty?',
+        effect:   { aoeDmgSupPct: 30 },
+        notes:    'AoE damage dealt by Support Attacks is increased by 30%. Considered a buff, cannot be cleansed.',
+        vertebrae: null,
+      },
+
+      {
+        key:      'dream_exhilaration',
+        label:    'Dreamscape Exhilaration',
+        type:     'stack_selector',
+        condition: 'Applied by Mechty?',
+        max:      6,
+        effect:   (stacks) => ({ corroDmgPct: stacks * 5 }),
+        notes:    'Corrosion damage dealt is increased by 5%. Can be stacked, considered a buff.',
+        vertebrae: null,
+      },
+
+    ],
+
+   },
+
+   {
+    id: 'lind',
+    name: 'Lind',
+    class: 'Support',
+    ammoType: 'Medium',
+    phase: 'Corrosion',
+    baseCritDmg: 120,   // update with actual base value when confirmed
+
+    skills: [
+
+      {
+        id: 'lind_basic',
+        name: 'Repulsive Shot',
+        phase_dmg_type: 'physical',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      'shotgun',
+        description: 'Selects one enemy target within 6 tiles and deals Physical damage equal to 80% of attack to it.',
+        multiplier: 0.80,
+        vertebrae: null,
+        cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+    ],
+    passives: '',
+    flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'sentinel', 'vanguard', 'bulwark'],
+    supportSkills: [
+
+      {
+        key:      'fk_radio',
+        label:    'Radio Invitation',
+        type:     'toggle',
+        condition: 'Applied by Lind',
+        effect:   { defReducPct: 15 },
+        notes:    'Selects 1 allied Doll on the battlefield. The selected Doll will be unable to move or use active skills in the battle, but all enemy units\' defense is reduced by 15% until the selected Doll dies. Lind gains Extra Action.',
+        vertebrae: null,
+      },
+
+    ],
+
+   },
+
+   {
+    id: 'peritya',
+    name: 'Peritya',
+    class: 'Sentinel',
+    ammoType: 'Heavy',
+    phase: 'Corrosion',
+    baseCritDmg: 120,   // update with actual base value when confirmed
+
+    skills: [
+
+      {
+        id: 'peritya_basic',
+        name: 'Rapid Overwrite',
+        phase_dmg_type: 'physical',
+        target_type:    'targeted',
+        skill_type:     'active',
+        ammo_type:      'heavy',
+        description: 'Selects one enemy target within 8 tiles and deals Physical damage equal to 80% of attack to it.',
+        multiplier: 0.80,
+        vertebrae: null,
+        cooldown: null,
+        stability_dmg: 3,
+        confectance_cost: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+
+      {
+        id: 'peritya_passive_lv1',
+        name: 'Chain Reaction',
+        phase_dmg_type: 'physical',
+        target_type:    'aoe',
+        skill_type:     'oot',
+        ammo_type:      'heavy',
+        description: 'Selects one enemy target within 8 tiles and deals Physical damage equal to 80% of attack to it.',
+        multiplier: 0.50,
+        vertebrae: ['v0', 'v1', 'v2', 'v3', 'v4'],
+        cooldown: null,
+        stability_dmg: 1,
+        confectance_cost: null,
+        canCrit: true,
+        scalingStat: 'ATK',
+      },
+    ],
+    passives: [
+
+      {
+        type: 'stack_selector',
+        key: 'chain_reaction',
+        label: 'Chain Reaction',
+        max: 3,
+        effect: (stacks) => ({
+          dmgPct: stacks * 10,
+        }),
+        vertebrae: null,
+        notes: '+10% DMG per stack of leftover mobility.',
+      },
+
+    ],
+    flowerSlots: ['sentinel', 'sentinel', 'sentinel', 'vanguard', 'vanguard', 'bulwark'],
+    supportSkills: [],
+
    },
 
 ];

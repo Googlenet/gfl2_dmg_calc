@@ -188,6 +188,7 @@ function getBattleAtkPct() {
   pct += getDollPassivesResult().atkPct;
   pct += getCommonKeyEffectResult().atkPct;
   pct += getFlowerResult().atkPct;
+  pct += getTeamSkillResult().atkPct;
   return pct;
 }
 
@@ -208,6 +209,7 @@ function getTotalDefReduction() {
   pct -= readNum('def_weapon_trait');
   pct -= readNum('def_skill_debuff');
   pct -= getDollPassivesResult().defReducPct;
+  pct -= getTeamSkillResult().defReducPct;
   return pct;
 }
 
@@ -233,6 +235,7 @@ function getDmgMult() {
   sum += getActiveFoodBuff().dmgPct || 0;
   sum += getCommonKeyEffectResult().dmgPct;
   sum += getFlowerResult().dmgPct;
+  sum += getTeamSkillResult().dmgPct;
   return 1 + sum / 100;
 }
 
@@ -250,8 +253,8 @@ function getEffectiveCritStats() {
     if (b.key === 'crit_rate_up') rateBonus += val;
   }
   return {
-    critDmg:  Math.min(baseDmg  + dmgBonus  + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg  + getFlowerResult().critDmg  + getDollPassivesResult().critDmg,  9999),
-    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate + getFlowerResult().critRate + getDollPassivesResult().critRate, 100),
+    critDmg:  Math.min(baseDmg  + dmgBonus  + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg  + getFlowerResult().critDmg  + getDollPassivesResult().critDmg  + getTeamSkillResult().critDmg,  9999),
+    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate + getFlowerResult().critRate + getDollPassivesResult().critRate + getTeamSkillResult().critRate, 100),
   };
 }
 
@@ -329,6 +332,74 @@ function getDollPassivesResult() {
 }
 
 
+
+// ── Team Skill Buffs ──────────────────────────────────────────────────────────
+// Aggregates supportSkills from up to 4 teammate dolls.
+// window.teamSkillState is defined and managed in ui.js.
+
+function getTeamSkillResult() {
+  const out = { atkPct: 0, dmgPct: 0, critDmg: 0, critRate: 0, defReducPct: 0 };
+  if (!window.teamSkillState) return out;
+
+  const phaseDmg   = activeSkill?.phase_dmg_type?.toLowerCase() || '';
+  const targetType = activeSkill?.target_type?.toLowerCase()    || '';
+  const skillType  = activeSkill?.skill_type?.toLowerCase()     || '';
+  const isAoe    = targetType === 'aoe';
+  const isTarget = targetType === 'targeted';
+  const isActive = skillType  === 'active';
+  const isOot    = skillType  === 'oot';
+
+  for (const slot of window.teamSkillState) {
+    if (!slot?.dollId) continue;
+    const doll = getDoll(slot.dollId);
+    if (!doll?.supportSkills?.length) continue;
+    const vLevel = slot.vertebrae || 'v0';
+
+    const raw = {};
+    for (const p of doll.supportSkills) {
+      if (p.vertebrae && !p.vertebrae.includes(vLevel)) continue;
+      let eff = {};
+      if (p.type === 'stack_selector') {
+        const stacks = slot.mechState?.[p.key] || 0;
+        if (stacks > 0) eff = p.effect(stacks);
+      } else if (p.type === 'toggle') {
+        if (slot.mechState?.[p.key]) eff = p.effect;
+      }
+      for (const [k, v] of Object.entries(eff)) raw[k] = (raw[k] || 0) + v;
+    }
+
+    for (const [id, val] of Object.entries(raw)) {
+      switch (id) {
+        case 'atkPct':        out.atkPct      += val; break;
+        case 'dmgPct':        out.dmgPct      += val; break;
+        case 'critDmg':       out.critDmg     += val; break;
+        case 'critRate':      out.critRate    += val; break;
+        case 'defReducPct':   out.defReducPct += val; break;
+        case 'corroDmgPct':   if (phaseDmg === 'corrosion') out.dmgPct += val; break;
+        case 'elecDmgPct':    if (phaseDmg === 'electric')  out.dmgPct += val; break;
+        case 'burnDmgPct':    if (phaseDmg === 'burn')      out.dmgPct += val; break;
+        case 'hydroDmgPct':   if (phaseDmg === 'hydro')     out.dmgPct += val; break;
+        case 'physDmgPct':    if (phaseDmg === 'physical')  out.dmgPct += val; break;
+        case 'freezeDmgPct':  if (phaseDmg === 'freeze')    out.dmgPct += val; break;
+        case 'corroCritDmg':  if (phaseDmg === 'corrosion') out.critDmg += val; break;
+        case 'elecCritDmg':   if (phaseDmg === 'electric')  out.critDmg += val; break;
+        case 'burnCritDmg':   if (phaseDmg === 'burn')      out.critDmg += val; break;
+        case 'hydroCritDmg':  if (phaseDmg === 'hydro')     out.critDmg += val; break;
+        case 'physCritDmg':   if (phaseDmg === 'physical')  out.critDmg += val; break;
+        case 'freezeCritDmg': if (phaseDmg === 'freeze')    out.critDmg += val; break;
+        case 'aoeDmgPct':     if (isAoe)    out.dmgPct  += val; break;
+        case 'targetDmgPct':  if (isTarget) out.dmgPct  += val; break;
+        case 'aoeCritDmg':    if (isAoe)    out.critDmg += val; break;
+        case 'targetCritDmg': if (isTarget) out.critDmg += val; break;
+        case 'activeDmgPct':  if (isActive) out.dmgPct  += val; break;
+        case 'ootDmgPct':     if (isOot)    out.dmgPct  += val; break;
+        case 'activeCritDmg': if (isActive) out.critDmg += val; break;
+        case 'ootCritDmg':    if (isOot)    out.critDmg += val; break;
+      }
+    }
+  }
+  return out;
+}
 
 function getWeaknessMult() {
   const ammo  = document.getElementById('ammoWeak')?.checked ? 1 : 0;
