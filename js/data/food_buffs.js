@@ -216,3 +216,78 @@ function getFood(id) {
 function getFoodList() {
   return FOOD_BUFFS;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Daily Condiment Buffs
+//
+// Each day has two quality tiers: 'delicious' and 'great'.
+// buff keys follow the same conventions as FOOD_BUFFS above.
+// defReducPct: positive value = that % of enemy DEF is ignored.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DAILY_BUFFS = [
+  {
+    day:       'monday',
+    label:     'Monday',
+    condiment: 'Black Pepper',
+    description: 'Critical damage is increased by 0.8% / 1.5%. Considered a buff, cannot be cleansed.',
+    delicious: { critDmg: 0.8 },
+    great:     { critDmg: 1.5 },
+  },
+  {
+    day:       'tuesday',
+    label:     'Tuesday',
+    condiment: 'Rose Salt',
+    description: 'Attack is increased by 20 / 50 points. Considered a buff, cannot be cleansed.',
+    delicious: { flatAtk: 20 },
+    great:     { flatAtk: 50 },
+  },
+  {
+    day:       'wednesday',
+    label:     'Wednesday',
+    condiment: 'Mature Vinegar',
+    description: 'Physical and phase damage dealt is increased by 1.2% / 2.4%. Considered a buff, cannot be cleansed.',
+    delicious: { dmgPct: 1.2 },
+    great:     { dmgPct: 2.4 },
+  },
+  {
+    day:       'thursday',
+    label:     'Thursday',
+    condiment: 'Sanxian Chicken Essence',
+    description: 'Damage dealt by active attacks is increased by 1.5% / 3%. Considered a buff, cannot be cleansed.',
+    delicious: { activeDmgPct: 1.5 },
+    great:     { activeDmgPct: 3 },
+  },
+  {
+    day:       'friday',
+    label:     'Friday',
+    condiment: 'Cooking Wine',
+    description: 'Out-of-turn damage dealt is increased by 1.5% / 3%. Considered a buff, cannot be cleansed.',
+    delicious: { ootDmgPct: 1.5 },
+    great:     { ootDmgPct: 3 },
+  },
+  {
+    day:       'saturday',
+    label:     'Saturday',
+    condiment: 'Weijixian Soy Sauce',
+    description: 'Attack is increased by 0.8% / 1.5% (and defense by same amount). Considered a buff, cannot be cleansed.',
+    delicious: { atkPct: 0.8 },
+    great:     { atkPct: 1.5 },
+  },
+  {
+    day:       'sunday',
+    label:     'Sunday',
+    condiment: 'White Sugar',
+    description: 'Physical and phase damage dealt is increased by 1% / 2%. Attacks ignore 1% / 2% of target\'s defense. Considered a buff, cannot be cleansed.',
+    delicious: { dmgPct: 1,  defReducPct: 1 },
+    great:     { dmgPct: 2,  defReducPct: 2 },
+  },
+];
+
+function getDailyBuff(day) {
+  return DAILY_BUFFS.find(d => d.day === day) || null;
+}
+
+function getDailyBuffList() {
+  return DAILY_BUFFS;
+}

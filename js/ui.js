@@ -1426,6 +1426,61 @@ function onFoodChange() {
   updateLive();
 }
 
+// ── Condiment (Daily Buff) ────────────────────────────────────────────────────
+
+let activeCondimentQuality = 'delicious'; // 'delicious' | 'great'
+
+function populateCondimentSelector() {
+  const sel = document.getElementById('condiment-day-select');
+  if (!sel) return;
+  sel.innerHTML = `<option value="" disabled selected>— Select a day —</option>`
+    + getDailyBuffList().map(d =>
+        `<option value="${d.day}">${d.label} — ${d.condiment}</option>`
+      ).join('');
+}
+
+function onCondimentQuality(quality) {
+  activeCondimentQuality = quality;
+  document.getElementById('condiment-q-delicious').classList.toggle('active', quality === 'delicious');
+  document.getElementById('condiment-q-great').classList.toggle('active', quality === 'great');
+  onCondimentChange();
+}
+
+function onCondimentChange() {
+  const day  = document.getElementById('condiment-day-select').value;
+  const entry = getDailyBuff(day);
+
+  if (!entry) {
+    document.getElementById('condiment-display').style.display = 'none';
+    updateLive();
+    return;
+  }
+
+  document.getElementById('condiment-display').style.display = '';
+  document.getElementById('condiment-name').textContent = `${entry.label} — ${entry.condiment}`;
+  document.getElementById('condiment-desc').textContent = entry.description;
+
+  const buff = entry[activeCondimentQuality] || {};
+
+  const show = (id, val, fmt) => {
+    const row = document.getElementById(id + '-row');
+    const span = document.getElementById(id + '-val');
+    const has = val != null && val !== 0;
+    row.style.display = has ? '' : 'none';
+    if (has) span.textContent = fmt(val);
+  };
+
+  show('condiment-flat',      buff.flatAtk,      v => `+${v}`);
+  show('condiment-atk-pct',   buff.atkPct,        v => `+${v}%`);
+  show('condiment-dmg-pct',   buff.dmgPct,        v => `+${v}%`);
+  show('condiment-active-dmg',buff.activeDmgPct,  v => `+${v}%`);
+  show('condiment-oot-dmg',   buff.ootDmgPct,     v => `+${v}%`);
+  show('condiment-crit-dmg',  buff.critDmg,       v => `+${v}%`);
+  show('condiment-def-reduc', buff.defReducPct,   v => `-${v}%`);
+
+  updateLive();
+}
+
 // ── Team Skills Panel ─────────────────────────────────────────────────────────
 
 const TEAM_SKILL_SLOT_COUNT = 4;
@@ -1599,6 +1654,7 @@ function init() {
   populateDollSelector();
   populateCommonKeySelector();
   populateFoodSelector();
+  populateCondimentSelector();
   renderTeamBuffPanel();
   renderTeamSkillPanel();
   document.getElementById('vertebrae-select').value = 'v0';

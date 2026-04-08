@@ -227,3 +227,7 @@ input[type="number"]:focus { border-color: var(--accent); box-shadow: var(--glow
 
 @keyframes pulse { 0%{opacity:1} 50%{opacity:0.4} 100%{opacity:1} }
 .pulsing { animation: pulse 0.3s ease; }
+
+.condiment-q-btn { background: var(--panel2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 4px 10px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+.condiment-q-btn:hover { border-color: var(--accent); color: var(--text-bright); }
+.condiment-q-btn.active { border-color: var(--accent); color: var(--accent); }

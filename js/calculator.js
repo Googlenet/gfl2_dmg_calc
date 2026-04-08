@@ -159,9 +159,19 @@ function getActiveFoodBuff() {
   return getFood(id)?.buff || {};
 }
 
-// In-Battle Flat ATK Total: baseAtkTotal + ichor + food flat
+// Active condiment buff — reads day dropdown + quality toggle, returns buff object
+function getActiveCondimentBuff() {
+  const day = document.getElementById('condiment-day-select')?.value;
+  if (!day) return {};
+  const entry = getDailyBuff(day);
+  if (!entry) return {};
+  const quality = window.activeCondimentQuality || 'delicious';
+  return entry[quality] || {};
+}
+
+// In-Battle Flat ATK Total: baseAtkTotal + ichor + food flat + condiment flat
 function getBattleFlatTotal() {
-  return getBaseAtkTotal() + getIchorFlatATK() + (getActiveFoodBuff().flatAtk || 0);
+  return getBaseAtkTotal() + getIchorFlatATK() + (getActiveFoodBuff().flatAtk || 0) + (getActiveCondimentBuff().flatAtk || 0);
 }
 
 // In-Battle Flat ATK Total ceiled — base for battle % calculations
@@ -186,6 +196,7 @@ function getBattleAtkPct() {
   pct += readNum('battle_fixedkey_pct');
   pct += readNum('battle_skill_pct');
   pct += getActiveFoodBuff().atkPct || 0;
+  pct += getActiveCondimentBuff().atkPct || 0;
   pct += getGunsmokeResult().atkPct;
   pct += getDollPassivesResult().atkPct;
   pct += getCommonKeyEffectResult().atkPct;
@@ -212,6 +223,7 @@ function getTotalDefReduction() {
   pct -= readNum('def_skill_debuff');
   pct -= getDollPassivesResult().defReducPct;
   pct -= getTeamSkillResult().defReducPct;
+  pct -= getActiveCondimentBuff().defReducPct || 0;
   return pct;
 }
 
@@ -240,6 +252,12 @@ function getDmgMult() {
   if (isTarget) sum += gsResult.targetDmgPct;
   sum += getDollPassivesResult().dmgPct;
   sum += getActiveFoodBuff().dmgPct || 0;
+  const condBuff = getActiveCondimentBuff();
+  const isActive = activeSkill?.skill_type === 'active';
+  const isOot    = activeSkill?.skill_type === 'oot';
+  sum += condBuff.dmgPct || 0;
+  if (isActive) sum += condBuff.activeDmgPct || 0;
+  if (isOot)    sum += condBuff.ootDmgPct    || 0;
   sum += getCommonKeyEffectResult().dmgPct;
   sum += getFlowerResult().dmgPct;
   sum += getTeamSkillResult().dmgPct;
@@ -260,7 +278,7 @@ function getEffectiveCritStats() {
     if (b.key === 'crit_rate_up') rateBonus += val;
   }
   return {
-    critDmg:  Math.min(baseDmg  + dmgBonus  + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg  + getFlowerResult().critDmg  + getDollPassivesResult().critDmg  + getTeamSkillResult().critDmg,  9999),
+    critDmg:  Math.min(baseDmg  + dmgBonus  + (getActiveCondimentBuff().critDmg || 0) + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg  + getFlowerResult().critDmg  + getDollPassivesResult().critDmg  + getTeamSkillResult().critDmg,  9999),
     critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate + getFlowerResult().critRate + getDollPassivesResult().critRate + getTeamSkillResult().critRate, 100),
   };
 }
