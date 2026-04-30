@@ -10,7 +10,6 @@ DOLLS.push({
   class:       '',          // Sentinel | Support | Bulwark | Vanguard
   ammoType:    '',            // Light | Medium | Heavy | Shotgun | Melee
   phase:       '',          // Physical | Electric | Corrosion | Burn | Hydro | Freeze
-  baseCritDmg: 120,                // base crit DMG % 
 
   skills: [
 
@@ -28,7 +27,6 @@ DOLLS.push({
       cooldown:         null,
       stability_dmg:    3,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -46,7 +44,6 @@ DOLLS.push({
       cooldown:         1,
       stability_dmg:    2,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -64,7 +61,6 @@ DOLLS.push({
       cooldown:         1,
       stability_dmg:    2,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -82,7 +78,6 @@ DOLLS.push({
       cooldown:         2,
       stability_dmg:    1,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -100,7 +95,6 @@ DOLLS.push({
       cooldown:         2,
       stability_dmg:    1,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -118,7 +112,6 @@ DOLLS.push({
       cooldown:         null,
       stability_dmg:    2,
       confectance_cost: 6,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -136,7 +129,6 @@ DOLLS.push({
       cooldown:         null,
       stability_dmg:    2,
       confectance_cost: 6,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -154,7 +146,6 @@ DOLLS.push({
       cooldown:         null,
       stability_dmg:    1,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -172,7 +163,6 @@ DOLLS.push({
       cooldown:         null,
       stability_dmg:    1,
       confectance_cost: null,
-      canCrit:          true,
       scalingStat:      'ATK',
     },
 
@@ -184,26 +174,28 @@ DOLLS.push({
   // type: 'stack_selector' — numbered buttons 0–max; effect is a function
   passives: [
 
-    // Example toggle:
-    // {
-    //   type:      'toggle',
-    //   key:       'dollname_some_buff',
-    //   label:     'Buff Name — +X% ATK',
-    //   condition: 'When condition is met',
-    //   effect:    { atkPct: 10 },           
-    //   vertebrae: [4, 5, 6],               
-    //   notes:     'Optional clarification.',
-    // },
+    /**
+    Example toggle:
+    {
+      type:      'toggle',
+      key:       'dollname_some_buff',
+      label:     'Buff Name — +X% ATK',
+      condition: 'When condition is met',
+      effect:    { atkPct: 10 },           
+      vertebrae: [4, 5, 6],               
+      notes:     'Optional clarification.',
+    },
 
-    // Example stack selector:
-    // {
-    //   type:   'stack_selector',
-    //   key:    'dollname_stack_buff',
-    //   label:  'Stack Buff Name',
-    //   max:    5,
-    //   effect: (stacks) => ({ dmgPct: stacks * 10 }),
-    //   notes:  '+10% DMG per stack.',
-    // },
+    Example stack selector:
+    {
+      type:   'stack_selector',
+      key:    'dollname_stack_buff',
+      label:  'Stack Buff Name',
+      max:    5,
+      effect: (stacks) => ({ dmgPct: stacks * 10 }),
+      notes:  '+10% DMG per stack.',
+    },
+    */
 
   ],
 
@@ -211,21 +203,31 @@ DOLLS.push({
   // Same shape as passives. Leave empty [] if doll has no relevant team buffs.
   supportSkills: [
 
-    // Example:
-    // {
-    //   key:      'dollname_team_buff',
-    //   label:    'Buff Name',
-    //   type:     'toggle',
-    //   effect:   { defReducPct: 15 },
-    //   vertebrae: [2, 3, 4, 5, 6],
-    //   notes:    '-15% DEF on enemy.',
-    // },
+    /**
+    Example:
+    {
+      key:      'dollname_team_buff',
+      label:    'Buff Name',
+      type:     'toggle',
+      effect:   { defReducPct: 15 },
+      vertebrae: [2, 3, 4, 5, 6],
+      notes:    '-15% DEF on enemy.',
+    },
+    */
 
   ],
 
-  // ── Flower Slots ─────────────────────────────────────────────────────────
   // 6 entries. Types: 'sentinel' | 'vanguard' | 'support' | 'bulwark'
   flowerSlots: ['', '', '', '', '', ''],
+
+  imagoform: [
+    { tier: 'embryo',   requires: {}, effect: {}, description: '' },
+    { tier: 'seedling', requires: {}, effect: {}, description: '' },
+    { tier: 'sprout',   requires: {}, effect: {}, description: '' },
+    { tier: 'shoot',    requires: {}, effect: {}, description: '' },
+    { tier: 'bud',      requires: {}, effect: {}, description: '' },
+    { tier: 'blossom',  requires: {}, effect: {}, description: '' },
+  ],
 
   notes: '',
 });
