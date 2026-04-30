@@ -673,13 +673,10 @@ function applyDollPassives() {
     const el = document.getElementById(p.field);
     if (el) el.value = p.value;
   });
-  // Set base crit DMG from doll data (read-only field)
   const critEl = document.getElementById('critdmg');
-  if (critEl && activeDoll.baseCritDmg != null) {
-    critEl.value = activeDoll.baseCritDmg;
-  } else if (critEl && !activeDoll.baseCritDmg) {
-    critEl.value = 150; // default if not set in doll data
-  }
+  if (critEl) critEl.value = 120;
+  const critRateEl = document.getElementById('critrate');
+  if (critRateEl) critRateEl.value = 20;
 }
 
 // ── Live Update (display only) ────────────────────────────────────────────────

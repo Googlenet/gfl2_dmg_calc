@@ -268,7 +268,7 @@ function getDmgMult() {
 
 function getEffectiveCritStats() {
   // critdmg is read-only (set from doll profile); critdmg_extra is user-editable
-  const baseDmg  = readNum('critdmg', 100) + readNum('critdmg_extra', 0);
+  const baseDmg  = readNum('critdmg', 120) + readNum('critdmg_extra', 0);
   let dmgBonus = 0, rateBonus = 0;
   for (const b of CRIT_TOGGLES) {
     const state = critToggleState[b.key];
@@ -279,7 +279,7 @@ function getEffectiveCritStats() {
   }
   return {
     critDmg:  Math.min(baseDmg  + dmgBonus  + (getActiveCondimentBuff().critDmg || 0) + getCommonKeyCritDmg()  + getCommonKeyEffectResult().critDmg  + getFlowerResult().critDmg  + getDollPassivesResult().critDmg  + getTeamSkillResult().critDmg,  9999),
-    critRate: Math.min(readNum('critrate', 0) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate + getFlowerResult().critRate + getDollPassivesResult().critRate + getTeamSkillResult().critRate, 100),
+    critRate: Math.min(readNum('critrate', 20) + rateBonus + (getActiveFoodBuff().critRate || 0) + getCommonKeyCritRate() + getCommonKeyEffectResult().critRate + getFlowerResult().critRate + getDollPassivesResult().critRate + getTeamSkillResult().critRate, 100),
   };
 }
 
