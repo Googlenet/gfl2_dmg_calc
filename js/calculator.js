@@ -231,7 +231,7 @@ function getFinalDef() {
   const baseDef = readNum('def_base');
   const buffPct = readNum('def_buff_pct');
   const boosted = Math.ceil(baseDef * (1 + buffPct / 100));
-  return boosted * (1 + getTotalDefReduction() / 100);
+  return Math.max(0, boosted * (1 + getTotalDefReduction() / 100));
 }
 
 // ── DMG Multiplier ────────────────────────────────────────────────────────────
@@ -476,9 +476,11 @@ function calculate() {
   const weakCount    = (document.getElementById('ammoWeak')?.checked ? 1 : 0)
                      + (document.getElementById('phaseWeak')?.checked ? 1 : 0);
 
-  const defBase   = readNum('def_base');
-  const baseAtk   = readNum('atk');
-  const otherFlat = totalFlat - baseAtk;
+  const defBase          = readNum('def_base');
+  const defBuffPct       = readNum('def_buff_pct');
+  const totalDefReduction = getTotalDefReduction();
+  const baseAtk          = readNum('atk');
+  const otherFlat        = totalFlat - baseAtk;
 
   const sections = [
     {
@@ -492,10 +494,11 @@ function calculate() {
       ].filter(Boolean),
     },
     {
-      id: 'def', title: 'DEF', total: defBase > 0 ? fmt(effAtk) : '—', cls: '',
+      id: 'def', title: 'DEF', total: defBase > 0 ? fmt(finalDef) : '—', cls: '',
       subs: [
-        defBase > 0       ? { name: `Enemy DEF: ${fmt(defBase)}`,     val: `reduced → ${fmt(finalDef)}`          } : null,
-        defBase > 0       ? { name: '÷ DEF formula',                   val: `→ ${fmt(effAtk)}`                    } : null,
+        defBase > 0         ? { name: 'Base Enemy DEF',               val: fmt(defBase)                               } : null,
+        defBuffPct > 0      ? { name: `DEF % buff`,                    val: `+${defBuffPct}%`                          } : null,
+        totalDefReduction < 0 ? { name: 'Battle DEF% debuffs',        val: `${totalDefReduction}%`                    } : null,
       ].filter(Boolean),
     },
     {
