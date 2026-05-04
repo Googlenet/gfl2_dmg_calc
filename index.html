@@ -355,7 +355,7 @@
   </div>
 
   <!-- hidden skillmod — set programmatically by skill selection, not user-editable -->
-  <input type="hidden" id="skillmod" value="250">
+  <input type="hidden" id="skillmod" value="100">
 
   <!-- ── Crit Stats ── -->
   <div class="panel" style="margin-bottom:14px;">
@@ -423,10 +423,9 @@
     <div class="weakness-total">Weakness Multiplier: <span id="weakTotal">×1.00</span></div>
   </div>
 
-  <!-- ── Calculate ── -->
-  <button class="calc-btn" onclick="runCalculate()"><span>Calculate Damage</span></button>
+</div>
 
-  <!-- ── Results ── -->
+<aside class="results-sidebar">
   <div class="results-panel">
     <div class="panel-label">Output</div>
     <div class="results-grid">
@@ -466,14 +465,13 @@
       </div>
     </div>
     <div class="breakdown">
-      <div class="breakdown-label">// step-by-step breakdown</div>
+      <div class="breakdown-label">Breakdown</div>
       <div class="breakdown-steps" id="breakdown-steps">
         <div class="step"><span class="step-name">Press Calculate to see breakdown</span><span class="step-val"></span></div>
       </div>
     </div>
   </div>
-
-</div>
+</aside>
 
 <!-- Scripts: data first, then logic, then UI -->
 <script src="js/data/remolding_pattern.js"></script>

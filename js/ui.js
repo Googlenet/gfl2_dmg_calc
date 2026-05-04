@@ -829,12 +829,14 @@ function updateLive() {
   document.getElementById('pip1').classList.toggle('active', c >= 1);
   document.getElementById('pip2').classList.toggle('active', c >= 2);
   document.getElementById('weakTotal').textContent = `×${(1 + c * 0.1).toFixed(2)}`;
+
+  runCalculate();
 }
 
-// ── Calculate Button ──────────────────────────────────────────────────────────
+// ── Results ───────────────────────────────────────────────────────────────────
 
 function runCalculate() {
-  const { normalDmg, critDmgVal, avgDmg, fixedDmg, steps } = calculate();
+  const { normalDmg, critDmgVal, avgDmg, fixedDmg, sections } = calculate();
 
   document.getElementById('result-normal').textContent = normalDmg.toLocaleString();
   document.getElementById('result-crit').textContent   = critDmgVal.toLocaleString();
@@ -843,7 +845,7 @@ function runCalculate() {
   const fixedRow = document.getElementById('fixed-dmg-row');
   if (fixedDmg > 0) {
     fixedRow.style.display = 'block';
-    document.getElementById('result-fixed').textContent       = `+${fixedDmg.toLocaleString()}`;
+    document.getElementById('result-fixed').textContent        = `+${fixedDmg.toLocaleString()}`;
     document.getElementById('result-total-normal').textContent = (normalDmg + fixedDmg).toLocaleString();
     document.getElementById('result-total-crit').textContent   = (critDmgVal + fixedDmg).toLocaleString();
     document.getElementById('result-total-avg').textContent    = (avgDmg    + fixedDmg).toLocaleString();
@@ -851,19 +853,18 @@ function runCalculate() {
     fixedRow.style.display = 'none';
   }
 
-  ['result-normal','result-crit','result-avg'].forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.remove('pulsing');
-    void el.offsetWidth;
-    el.classList.add('pulsing');
-  });
-
-  document.getElementById('breakdown-steps').innerHTML = steps.map((s, i) =>
-    `<div class="step ${s.cls}">
-       <span class="step-name">${s.name}</span>
-       <span class="step-val ${s.col}">${s.val}</span>
-     </div>${i === steps.length - 4 ? '<div class="step-arrow">↓</div>' : ''}`
-  ).join('');
+  document.getElementById('breakdown-steps').innerHTML = sections.map(sec => `
+    <div class="breakdown-section">
+      <div class="breakdown-section-header ${sec.cls}">
+        <span class="breakdown-section-title">${sec.title}</span>
+        <span class="breakdown-section-total ${sec.cls}">${sec.total}</span>
+      </div>
+      ${sec.subs.map(sub => `
+        <div class="step">
+          <span class="step-name">${sub.name}</span>
+          <span class="step-val ${sec.cls}">${sub.val}</span>
+        </div>`).join('')}
+    </div>`).join('');
 }
 
 // ── Event Listeners & Init ────────────────────────────────────────────────────

@@ -476,23 +476,56 @@ function calculate() {
   const weakCount    = (document.getElementById('ammoWeak')?.checked ? 1 : 0)
                      + (document.getElementById('phaseWeak')?.checked ? 1 : 0);
 
-  const steps = [
-    { cls:'atk-step', name:'Flat ATK Sources',                                               val: fmt(totalFlat),                                      col:'atk-col' },
-    { cls:'atk-step', name:`× ATK% Boost (+${totalPct}%)`,                                   val: `→ ${fmt(baseAtkTotal)}`,                            col:'atk-col' },
-    battleFlatVal > 0   ? { cls:'atk-step', name:`+ In-Battle Flat (+${fmt(battleFlatVal)})`,val: `→ ${fmt(battleFlat)}`,                              col:'atk-col' } : null,
-    battlePct > 0       ? { cls:'atk-step', name:`× Battle ATK% (+${battlePct}%)`,           val: `→ ${fmt(atkFinal)}  [Final ATK]`,                  col:'atk-col' } : null,
-    { cls:'',           name:`Final DEF  [base ${fmt(readNum('def_base'))} → reduced]`,      val: fmt(finalDef),                                       col:''        },
-    { cls:'',           name:'÷ DEF Formula  [ATK/(1+DEF/ATK)]',                             val: fmt(effAtk),                                         col:''        },
-    { cls:'dmg-step',   name:`× DMG Pool (+${baseDmgSum}%${mech.dmgMultiplier>1?' ×'+mech.dmgMultiplier:''})`,
-                                                                                              val: `×${dmgMult.toFixed(3)}  → ${fmt(effAtk*dmgMult)}`,  col:'dmg-col' },
-    { cls:'',           name:`× CritDMG  [normal ×1.00 | crit ×${critMult.toFixed(2)}]`,    val: 'see cards →',                                       col:''        },
-    { cls:'',           name:`× Weakness  [${weakCount} match × 10%]`,                       val: `×${weakMult.toFixed(2)}`,                           col:''        },
-    { cls:'',           name:`× Skill Mod  [${skillPct}%]`,                                  val: `×${skillMod.toFixed(3)}`,                           col:''        },
-    { cls:'active',     name:'= Normal Hit',                                                  val: normalOut.toLocaleString(),                          col:''        },
-    { cls:'active',     name:'= Critical Hit',                                                val: critOut.toLocaleString(),                            col:''        },
-    { cls:'active',     name:`= Avg (${critRate}% crit rate)`,                               val: avgOut.toLocaleString(),                             col:''        },
-    fixedDmg > 0   ? { cls:'active', name:'+ Fixed DMG (kit, ignores DEF)',                  val: `+${fixedDmg.toLocaleString()}`,                     col:''        } : null,
-  ].filter(Boolean);
+  const defBase   = readNum('def_base');
+  const baseAtk   = readNum('atk');
+  const otherFlat = totalFlat - baseAtk;
 
-  return { normalDmg: normalOut, critDmgVal: critOut, avgDmg: avgOut, fixedDmg, steps };
+  const sections = [
+    {
+      id: 'atk', title: 'ATK', total: atkFinal > 0 ? fmt(atkFinal) : '—', cls: 'atk-col',
+      subs: [
+        baseAtk > 0       ? { name: 'Base ATK',                       val: fmt(baseAtk)                          } : null,
+        otherFlat > 0     ? { name: '+ Flat bonuses',                  val: `+${fmt(otherFlat)}`                  } : null,
+        totalPct > 0      ? { name: `× ATK% (+${totalPct}%)`,         val: `→ ${fmt(baseAtkTotal)}`              } : null,
+        battleFlatVal > 0 ? { name: `+ Battle flat`,                   val: `→ ${fmt(battleFlat)}`                } : null,
+        battlePct > 0     ? { name: `× Battle ATK% (+${battlePct}%)`, val: `→ ${fmt(atkFinal)}`                  } : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'def', title: 'DEF', total: defBase > 0 ? fmt(effAtk) : '—', cls: '',
+      subs: [
+        defBase > 0       ? { name: `Enemy DEF: ${fmt(defBase)}`,     val: `reduced → ${fmt(finalDef)}`          } : null,
+        defBase > 0       ? { name: '÷ DEF formula',                   val: `→ ${fmt(effAtk)}`                    } : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'dmg', title: 'DMG', total: `×${dmgMult.toFixed(3)}`, cls: 'dmg-col',
+      subs: [
+        baseDmgSum > 0        ? { name: 'DMG% pool',                  val: `+${baseDmgSum}%`                     } : null,
+        mech.dmgMultiplier > 1 ? { name: 'Passive multiplier',        val: `×${mech.dmgMultiplier}`              } : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'crit', title: 'Crit DMG', total: `×${critMult.toFixed(2)}`, cls: 'crit-col',
+      subs: [
+        critDmgPct > 120  ? { name: 'Crit DMG bonuses',               val: `+${(critDmgPct - 120).toFixed(0)}%`  } : null,
+        critRate > 0      ? { name: 'Crit rate',                       val: `${critRate}%`                        } : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'weak', title: 'Weakness', total: `×${weakMult.toFixed(2)}`, cls: '',
+      subs: [
+        document.getElementById('ammoWeak')?.checked  ? { name: 'Ammo weakness',  val: '+10%' } : null,
+        document.getElementById('phaseWeak')?.checked ? { name: 'Phase weakness', val: '+10%' } : null,
+      ].filter(Boolean),
+    },
+    {
+      id: 'skill', title: 'Skill Mod', total: `×${skillMod.toFixed(3)}`, cls: '',
+      subs: [
+        skillPct !== 100  ? { name: 'Skill multiplier',                val: `${skillPct}%`                        } : null,
+      ].filter(Boolean),
+    },
+  ];
+
+  return { normalDmg: normalOut, critDmgVal: critOut, avgDmg: avgOut, fixedDmg, sections };
 }
