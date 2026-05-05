@@ -373,6 +373,17 @@ function populateDollSelector() {
       ).join('');
 }
 
+function onAtkOverrideToggle() {
+  const active = document.getElementById('atk-override-toggle').checked;
+  document.getElementById('atk_override').style.display = active ? '' : 'none';
+  document.querySelectorAll('.atk-panel input').forEach(el => {
+    if (el.id === 'atk-override-toggle' || el.id === 'atk_override') return;
+    el.disabled = active;
+    el.style.opacity = active ? '0.35' : '';
+  });
+  updateLive();
+}
+
 function onDollChange() {
   activeDoll = getDoll(document.getElementById('doll-select').value);
   activeMultIndex = 0;

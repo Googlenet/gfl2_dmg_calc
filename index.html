@@ -204,6 +204,19 @@
     <div class="corner-deco"></div>
     <div class="panel-label atk">Attack Stats</div>
 
+    <div class="stat-row" style="border-bottom:none;">
+      <span class="stat-label">Manual ATK Override</span>
+      <div class="stat-input" style="display:flex;align-items:center;gap:10px;">
+        <label class="toggle">
+          <input type="checkbox" id="atk-override-toggle" onchange="onAtkOverrideToggle()">
+          <span class="toggle-track"></span>
+        </label>
+        <input type="number" id="atk_override" min="0" placeholder="Enter final ATK"
+               style="display:none;" oninput="updateLive()">
+      </div>
+    </div>
+    <div class="stat-divider"></div>
+
     <div class="section-header">Flat ATK Sources</div>
     <div class="stat-row"><span class="stat-label">Base Doll ATK</span><div class="stat-input"><input type="number" id="atk" min="0" oninput="updateLive()"></div></div>
     <div class="stat-row"><span class="stat-label">Weapon Flat ATK</span><div class="stat-input"><input type="number" id="atk_wpn_flat" min="0" oninput="updateLive()"></div></div>

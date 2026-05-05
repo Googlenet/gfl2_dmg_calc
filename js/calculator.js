@@ -207,6 +207,8 @@ function getBattleAtkPct() {
 
 // In-Battle ATK: ceil(flatTotal) × (1 + battle%) — decimal for display
 function getAtkFinal() {
+  if (document.getElementById('atk-override-toggle')?.checked)
+    return readNum('atk_override');
   return getBattleAtkFlatWhole() * (1 + getBattleAtkPct() / 100);
 }
 
