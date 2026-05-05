@@ -413,6 +413,7 @@ function getTeamSkillResult() {
         case 'hydroCritDmg':  if (phaseDmg === 'hydro')     out.critDmg += val; break;
         case 'physCritDmg':   if (phaseDmg === 'physical')  out.critDmg += val; break;
         case 'freezeCritDmg': if (phaseDmg === 'freeze')    out.critDmg += val; break;
+        case 'phaseDmgPct':   if (phaseDmg !== 'physical' && phaseDmg !== '') out.dmgPct += val; break;
         case 'aoeDmgPct':     if (isAoe)    out.dmgPct  += val; break;
         case 'targetDmgPct':  if (isTarget) out.dmgPct  += val; break;
         case 'aoeCritDmg':    if (isAoe)    out.critDmg += val; break;

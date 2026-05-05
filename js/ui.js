@@ -929,21 +929,21 @@ function renderCkeyColumn(i, key) {
       <div class="ckey-slot">
         <div class="ckey-slot-label is-default">${slot1Label}</div>
         <input class="ckey-slot-input" type="number" id="ckey-${i}-s1-val"
-               value="0" min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
+               min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
       </div>
 
       <div class="ckey-slot">
         <select class="ckey-slot-type" id="ckey-${i}-s2-type"
                 onchange="updateLive()" ${!key ? 'disabled' : ''}>${slotOptHtml}</select>
         <input class="ckey-slot-input" type="number" id="ckey-${i}-s2-val"
-               value="0" min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
+               min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
       </div>
 
       <div class="ckey-slot">
         <select class="ckey-slot-type" id="ckey-${i}-s3-type"
                 onchange="updateLive()" ${!key ? 'disabled' : ''}>${slotOptHtml}</select>
         <input class="ckey-slot-input" type="number" id="ckey-${i}-s3-val"
-               value="0" min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
+               min="0" ${!key ? 'disabled' : ''} oninput="updateLive()">
       </div>
     </div>`;
 }
