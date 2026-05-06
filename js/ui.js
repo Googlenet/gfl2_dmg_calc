@@ -369,7 +369,7 @@ function populateDollSelector() {
   if (!sel) return;
   sel.innerHTML = `<option value="">— Select a Doll —</option>`
     + getDollList().map(d =>
-        `<option value="${d.id}">${d.name} (${d.class})</option>`
+        `<option value="${d.id}">${d.name} (${d.phase}/${d.class})</option>`
       ).join('');
 }
 

@@ -8,7 +8,6 @@ DOLLS.push({
   class: 'Sentinel',
   ammoType: 'Medium',
   phase: 'Corrosion',
-  baseCritDmg: 150,   // update with actual base value when confirmed
 
   skills: [
 
@@ -304,6 +303,16 @@ DOLLS.push({
       effect: { activeDmgPct: 30 },
       vertebrae: [5, 6],
       notes: '+30% dmg from active attacks from Klukai.',
+    },
+
+    {
+      type: 'stack_selector',
+      key: 'klukai_ult_targets',
+      label: '(Ult) Devastating Drift — Targets Hit',
+      max: 5,
+      effect: (stacks) => ({ dmgPct: stacks * 10 }),
+      vertebrae: [3, 4, 5, 6],
+      notes: '+10% DMG per target hit, max 5 (+50%). Use max for boss hit.',
     },
 
   ],

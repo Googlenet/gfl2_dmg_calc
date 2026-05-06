@@ -491,9 +491,9 @@ function calculate() {
       subs: [
         baseAtk > 0       ? { name: 'Base ATK',                       val: fmt(baseAtk)                          } : null,
         otherFlat > 0     ? { name: '+ Flat bonuses',                  val: `+${fmt(otherFlat)}`                  } : null,
-        totalPct > 0      ? { name: `× ATK% (+${totalPct}%)`,         val: `→ ${fmt(baseAtkTotal)}`              } : null,
-        battleFlatVal > 0 ? { name: `+ Battle flat`,                   val: `→ ${fmt(battleFlat)}`                } : null,
-        battlePct > 0     ? { name: `× Battle ATK% (+${battlePct}%)`, val: `→ ${fmt(atkFinal)}`                  } : null,
+        totalPct > 0      ? { name: 'ATK%',                            val: `+${totalPct}%`                       } : null,
+        battleFlatVal > 0 ? { name: '+ Battle flat',                   val: `+${fmt(battleFlatVal)}`              } : null,
+        battlePct > 0     ? { name: 'Battle ATK%',                     val: `+${battlePct}%`                      } : null,
       ].filter(Boolean),
     },
     {
