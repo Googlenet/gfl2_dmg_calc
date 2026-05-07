@@ -527,9 +527,7 @@ function calculate() {
     },
     {
       id: 'skill', title: 'Skill Mod', total: `×${skillMod.toFixed(3)}`, cls: '',
-      subs: [
-        skillPct !== 100  ? { name: 'Skill multiplier',                val: `${skillPct}%`                        } : null,
-      ].filter(Boolean),
+      subs: [],
     },
   ];
 

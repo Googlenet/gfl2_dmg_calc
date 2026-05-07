@@ -202,7 +202,7 @@ DOLLS.push({
       ammo_type:      null,
       description: 'Immune to all negative Crowd Control tile effects.\nAt the start of the battle, gains 3 stacks of Competitive Spirit. When dealing damage with active attacks, applies 1 stack of Corrosive Infusion to the target for 2 turns.\nEach time Klukai performs an active attack or other allied units deal Corrosion damage, Klukai gains 1 stack of Competitive Spirit after skill usage and gains 1 point of Confectance Index.\nFor every 3 points of Confectance Index gained, applies an additional 1 stack of Corrosive Infusion to enemy units with Corrosive Infusion, and reduces the cooldown of her Ultimate skill by 2 turns.',
       multiplier: null,
-      vertebrae: [2, 3, 4, 5],
+      vertebrae: [2, 3, 4, 5, 6],
       cooldown: null,
       stability_dmg: null,
       confectance_cost: null,

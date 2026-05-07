@@ -434,7 +434,7 @@ function renderSkillSelector() {
     const multLabel = Array.isArray(s.multiplier)
       ? 'variable'
       : s.multiplier !== null ? `${(s.multiplier * 100).toFixed(0)}%` : 'passive';
-    return `<option value="${s.id}">${s.name} — ${s.dmg_type} / ${s.skill_type} (${multLabel})</option>`;
+    return `<option value="${s.id}">${s.name} — ${s.phase_dmg_type} / ${s.skill_type} (${multLabel})</option>`;
   }).join('');
 
   // Default to first skill
